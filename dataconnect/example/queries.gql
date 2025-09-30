@@ -1,0 +1,29 @@
+mutation CreateHabitLog {
+  habitLog_insert(data: {
+    habitId: "550e8400-e29b-41d4-a716-446655440000",
+    userId: "550e8400-e29b-41d4-a716-446655440000",
+    logDate: "2024-01-01",
+    status: "completed"
+  }) @auth(level: USER)
+}
+
+query ListHabits {
+  habits(where: {userId: {eq_expr: "auth.uid"}}) @auth(level: USER) {
+    id
+    name
+    description
+  }
+}
+
+mutation UpdateUserBio {
+  user_update(key: {id_expr: "auth.uid"}, data: {bio: "New bio"}) @auth(level: USER)
+}
+
+query GetGroupMembers {
+  groupMembers(where: {groupId: {eq: "550e8400-e29b-41d4-a716-446655440000"}}) @auth(level: USER) {
+    user {
+      id
+      displayName
+    }
+  }
+}

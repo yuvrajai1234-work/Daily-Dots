@@ -1,0 +1,7 @@
+CREATE TABLE habits (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL
+);

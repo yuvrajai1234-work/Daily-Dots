@@ -1,0 +1,46 @@
+type User @table {
+  username: String!
+  email: String!
+  passwordHash: String!
+  createdAt: Timestamp!
+  displayName: String
+  profilePictureUrl: String
+  bio: String
+  lastLoginAt: Timestamp
+}
+
+type Habit @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+  targetFrequency: String!
+  description: String
+  reminderTime: Timestamp
+}
+
+type HabitLog @table {
+  user: User!
+  habit: Habit!
+  logDate: Date!
+  status: String!
+  createdAt: Timestamp!
+  reflection: String
+  pointsEarned: Int
+}
+
+type Group @table {
+  creator: User!
+  name: String!
+  description: String!
+  createdAt: Timestamp!
+  isPublic: Boolean!
+  imageUrl: String
+  joinCode: String
+}
+
+type GroupMember @table(key: ["user", "group"]) {
+  user: User!
+  group: Group!
+  joinedAt: Timestamp!
+  role: String
+}
