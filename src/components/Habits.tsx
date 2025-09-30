@@ -27,35 +27,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/supabaseClient";
+import { supabase } from "@/integrations/supabase/client"; // Corrected Supabase client
 import { useAuth } from "./AuthProvider";
 import { useEffect, useState, useCallback } from "react";
 import AddHabit from "./AddHabit";
 import EditHabit from "./EditHabit";
 import { MoreHorizontal } from "lucide-react";
 
+// Updated Habit type to match new schema
 export type Habit = {
   id: number;
   name: string;
-  description: string | null;
+  icon: string | null;
+  color: string | null;
   created_at: string;
   user_id: string;
-  level_1_label: string | null;
-  level_2_label: string | null;
-  level_3_label: string | null;
-  level_4_label: string | null;
 };
 
-export type HabitLog = {
-    id: number;
-    habit_id: number;
-    date: string;
-    level: number;
-}
+// New HabitCompletion type
+export type HabitCompletion = {
+  id: number;
+  habit_id: number;
+  completion_date: string;
+  effort_level: number;
+};
 
 const Habits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [habitCompletions, setHabitCompletions] = useState<HabitCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const { session } = useAuth();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -66,16 +65,14 @@ const Habits = () => {
 
     try {
       setLoading(true);
+      // Fetched corrected columns
       const { data, error } = await supabase
         .from("habits")
-        .select("*")
+        .select("id, name, icon, color, created_at, user_id")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       setHabits(data || []);
     } catch (error: any) {
       console.error("Error fetching habits:", error.message);
@@ -84,31 +81,29 @@ const Habits = () => {
     }
   }, [session]);
 
-  const fetchHabitLogs = useCallback(async () => {
+  const fetchHabitCompletions = useCallback(async () => {
     if (!session) return;
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     try {
-        const { data, error } = await supabase
-            .from("habit_logs")
-            .select("*")
-            .eq("user_id", session.user.id)
-            .eq("date", today);
+      // Fetched from habit_completions table
+      const { data, error } = await supabase
+        .from("habit_completions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("completion_date", today);
 
-        if (error) {
-            throw error;
-        }
-
-        setHabitLogs(data || []);
+      if (error) throw error;
+      setHabitCompletions(data || []);
     } catch (error: any) {
-        console.error("Error fetching habit logs:", error.message);
+      console.error("Error fetching habit completions:", error.message);
     }
-}, [session]);
+  }, [session]);
 
   useEffect(() => {
     fetchHabits();
-    fetchHabitLogs();
-  }, [fetchHabits, fetchHabitLogs]);
+    fetchHabitCompletions();
+  }, [fetchHabits, fetchHabitCompletions]);
 
   const handleEditClick = (habit: Habit) => {
     setSelectedHabit(habit);
@@ -125,41 +120,45 @@ const Habits = () => {
 
     try {
       const { error } = await supabase.from("habits").delete().eq("id", habitId);
-
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       fetchHabits(); // Refresh the list
     } catch (error: any) {
       console.error("Error deleting habit:", error.message);
     }
   };
 
-  const handleLogChange = async (habitId: number, level: string) => {
+  // Renamed and updated to handle effort_level
+  const handleEffortChange = async (habitId: number, effortLevel: string) => {
     if (!session) return;
     const today = new Date().toISOString().slice(0, 10);
-    const levelNum = parseInt(level);
+    const effortNum = parseInt(effortLevel);
 
     try {
-        const { error } = await supabase
-            .from("habit_logs")
-            .upsert({ habit_id: habitId, user_id: session.user.id, date: today, level: levelNum }, { onConflict: 'habit_id, date' })
+      const { error } = await supabase
+        .from("habit_completions")
+        .upsert(
+          {
+            habit_id: habitId,
+            user_id: session.user.id,
+            completion_date: today,
+            effort_level: effortNum,
+          },
+          { onConflict: 'habit_id, completion_date' }
+        );
 
-        if (error) {
-            throw error;
-        }
-
-        fetchHabitLogs();
+      if (error) throw error;
+      fetchHabitCompletions();
     } catch (error: any) {
-        console.error("Error logging habit:", error.message);
+      console.error("Error logging habit effort:", error.message);
     }
   };
 
-  const getHabitLogLevel = (habitId: number) => {
-    const log = habitLogs.find(log => log.habit_id === habitId);
-    return log ? log.level.toString() : undefined;
-  }
+  const getHabitEffortLevel = (habitId: number) => {
+    const completion = habitCompletions.find(
+      (comp) => comp.habit_id === habitId
+    );
+    return completion ? completion.effort_level.toString() : undefined;
+  };
 
   return (
     <>
@@ -167,9 +166,7 @@ const Habits = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>My Habits</CardTitle>
-            <CardDescription>
-              Log your daily progress for each habit.
-            </CardDescription>
+            <CardDescription>Log your daily effort for each habit.</CardDescription>
           </div>
           <AddHabit onHabitAdded={fetchHabits} />
         </CardHeader>
@@ -186,26 +183,33 @@ const Habits = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Habit</TableHead>
-                  <TableHead>Today's Progress</TableHead>
+                  <TableHead>Today's Effort</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {habits.map((habit) => (
                   <TableRow key={habit.id}>
-                    <TableCell className="font-medium">{habit.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <span className="flex items-center">
+                        {habit.icon && <span className="mr-2">{habit.icon}</span>}
+                        {habit.name}
+                      </span>
+                    </TableCell>
                     <TableCell>
-                        <Select onValueChange={(value) => handleLogChange(habit.id, value)} value={getHabitLogLevel(habit.id)}>
-                            <SelectTrigger className="w-[220px]">
-                                <SelectValue placeholder="Log your effort" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1">{habit.level_1_label || 'Level 1'}</SelectItem>
-                                <SelectItem value="2">{habit.level_2_label || 'Level 2'}</SelectItem>
-                                <SelectItem value="3">{habit.level_3_label || 'Level 3'}</SelectItem>
-                                <SelectItem value="4">{habit.level_4_label || 'Level 4'}</SelectItem>
-                            </SelectContent>
-                        </Select>
+                      <Select
+                        onValueChange={(value) => handleEffortChange(habit.id, value)}
+                        value={getHabitEffortLevel(habit.id)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Log your effort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Low</SelectItem>
+                          <SelectItem value="2">Medium</SelectItem>
+                          <SelectItem value="3">High</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

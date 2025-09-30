@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const AuthContext = createContext<{ session: Session | null }>({ session: null });
@@ -33,7 +33,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!loading && !session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up"  && location.pathname !== "/") {
+    // Wait until the initial session loading is complete
+    if (loading) return;
+
+    // Redirect unauthenticated users to the sign-in page
+    if (!session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up" && location.pathname !== "/") {
       navigate("/sign-in");
     }
   }, [session, loading, navigate, location.pathname]);

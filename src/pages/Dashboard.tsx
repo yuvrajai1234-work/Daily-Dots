@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+<<<<<<< HEAD
 import { useToast } from "@/hooks/use-toast";
 import {
   Calendar,
@@ -24,30 +23,17 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+=======
+import Habits from "@/components/Habits";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
 
-interface Habit {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-}
-
-interface HabitCompletion {
-  id: string;
-  habit_id: string;
-  effort_level: number;
-  completion_date: string;
-}
-
-interface DailyReflection {
-  id: string;
-  reflection_text: string;
-  reflection_date: string;
-}
-
-export default function Dashboard() {
-  const navigate = useNavigate();
+const Dashboard = () => {
+  const { session } = useAuth();
   const { toast } = useToast();
+<<<<<<< HEAD
   const [user, setUser] = useState<any>(null);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
@@ -156,23 +142,94 @@ export default function Dashboard() {
     loadDashboardData(user.id);
     toast({ title: "Habit logged successfully!" });
   };
+=======
+  const [reflection, setReflection] = useState("");
+  const [dailyProgress, setDailyProgress] = useState(0);
+  const [weeklyCompletions, setWeeklyCompletions] = useState(0);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const fetchDashboardData = useCallback(async () => {
+    if (!session) return;
+
+    // Fetch daily reflection
+    const { data: reflectionData, error: reflectionError } = await supabase
+      .from("daily_reflections")
+      .select("reflection_text")
+      .eq("user_id", session.user.id)
+      .eq("reflection_date", today)
+      .single();
+
+    if (reflectionData) {
+      setReflection(reflectionData.reflection_text);
+    }
+
+    // Fetch habit completions for progress
+    const { data: habits, error: habitsError } = await supabase
+      .from("habits")
+      .select("id")
+      .eq("user_id", session.user.id);
+
+    if (habitsError) {
+      console.error("Error fetching habits:", habitsError);
+      return;
+    }
+
+    const { data: completions, error: completionsError } = await supabase
+      .from("habit_completions")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .eq("completion_date", today);
+
+    if (completionsError) {
+      console.error("Error fetching completions:", completionsError);
+      return;
+    }
+
+    if (habits.length > 0) {
+      setDailyProgress((completions.length / habits.length) * 100);
+    }
+
+    // Fetch weekly completions
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const { count: weeklyCount, error: weeklyError } = await supabase
+        .from("habit_completions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", session.user.id)
+        .gte("completion_date", oneWeekAgo.toISOString().slice(0, 10));
+
+    if (weeklyCount) {
+        setWeeklyCompletions(weeklyCount);
+    }
+
+  }, [session, today]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
 
   const handleSaveReflection = async () => {
-    if (!user || !reflectionText.trim()) return;
+    if (!session) return;
 
+<<<<<<< HEAD
     const today = new Date().toISOString().split("T")[0];
+=======
+    const { error } = await supabase.from("daily_reflections").upsert(
+      {
+        user_id: session.user.id,
+        reflection_date: today,
+        reflection_text: reflection,
+      },
+      { onConflict: "user_id, reflection_date" }
+    );
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
 
-    if (todayReflection) {
-      const { error } = await supabase
-        .from("daily_reflections")
-        .update({ reflection_text: reflectionText })
-        .eq("id", todayReflection.id);
-
-      if (error) {
-        toast({ title: "Error saving reflection", variant: "destructive" });
-        return;
-      }
+    if (error) {
+      toast({ title: "Error saving reflection", description: error.message, variant: "destructive" });
     } else {
+<<<<<<< HEAD
       const { error } = await supabase.from("daily_reflections").insert({
         user_id: user.id,
         reflection_date: today,
@@ -183,12 +240,13 @@ export default function Dashboard() {
         toast({ title: "Error saving reflection", variant: "destructive" });
         return;
       }
+=======
+      toast({ title: "Reflection saved!", description: "Your thoughts for the day are safe." });
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
     }
-
-    loadDashboardData(user.id);
-    toast({ title: "Reflection saved!" });
   };
 
+<<<<<<< HEAD
   const getCompletionForHabit = (habitId: string) => {
     return completions.find((c) => c.habit_id === habitId);
   };
@@ -208,31 +266,46 @@ export default function Dashboard() {
     { day: "Sun", score: stats.todayScore },
   ];
 
+=======
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">My Habits Dashboard</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily Progress</CardTitle>
+            <CardDescription>Your habit completion for today.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Progress value={dailyProgress} className="w-full" />
+            <p className="text-sm text-muted-foreground mt-2">{Math.round(dailyProgress)}% complete</p>
+          </CardContent>
+        </Card>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Today's Score</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Completions</CardTitle>
+            <CardDescription>Total habits completed this week.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="text-3xl font-bold">{weeklyCompletions}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-1">
+            <CardHeader>
+                <CardTitle>Daily Reflection</CardTitle>
+                <CardDescription>Write down your thoughts for the day.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.todayScore}</div>
-              <p className="text-xs text-muted-foreground">Total points earned today</p>
+            <CardContent className="space-y-4">
+                <Textarea
+                placeholder="How was your day? What did you learn?"
+                value={reflection}
+                onChange={(e) => setReflection(e.target.value)}
+                />
+                <Button onClick={handleSaveReflection}>Save Reflection</Button>
             </CardContent>
+<<<<<<< HEAD
           </Card>
 
           <Card>
@@ -451,6 +524,16 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+=======
+        </Card>
+      </div>
+      
+      <div>
+        <Habits />
+      </div>
+>>>>>>> d5e8d35d1d458736e2aa95503f44a1f32cb924bf
     </div>
   );
-}
+};
+
+export default Dashboard;
