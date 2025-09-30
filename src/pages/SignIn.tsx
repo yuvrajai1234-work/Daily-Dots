@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 export const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -17,6 +17,8 @@ export const SignIn = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    console.log("Signing in with:", { email, password });
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
