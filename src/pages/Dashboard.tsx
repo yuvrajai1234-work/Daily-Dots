@@ -1,53 +1,3 @@
-<<<<<<< HEAD
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Habits from "@/components/Habits";
-
-const Dashboard = () => {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-          </Header>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cycle Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Improvement</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0%</div>
-          </CardContent>
-        </Card>
-      </div>
-      <div>
-        <Habits />
-      </div>
-    </div>
-  );
-};
-
-export default Dashboard;
-=======
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -495,4 +445,3 @@ export default function Dashboard() {
     </div>
   );
 }
->>>>>>> bbda8c31fed5a63efbe5c39fad64b087a197b74d
