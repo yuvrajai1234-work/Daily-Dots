@@ -7,16 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Calendar, 
-  Flame, 
-  Trophy, 
-  TrendingUp, 
+import {
+  Calendar,
+  Flame,
+  Trophy,
+  TrendingUp,
   LogOut,
   Sparkles,
-  Plus
+  Plus,
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Habit {
   id: string;
@@ -50,7 +57,7 @@ export default function Dashboard() {
     todayScore: 0,
     dailyStreak: 7,
     cycleScore: 0,
-    improvement: 0
+    improvement: 0,
   });
 
   useEffect(() => {
@@ -80,21 +87,21 @@ export default function Dashboard() {
       .from("habits")
       .select("*")
       .eq("user_id", userId);
-    
+
     if (habitsData) setHabits(habitsData);
 
     // Load today's completions
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const { data: completionsData } = await supabase
       .from("habit_completions")
       .select("*")
       .eq("user_id", userId)
       .eq("completion_date", today);
-    
+
     if (completionsData) {
       setCompletions(completionsData);
       const todayScore = completionsData.reduce((sum, c) => sum + c.effort_level, 0);
-      setStats(prev => ({ ...prev, todayScore }));
+      setStats((prev) => ({ ...prev, todayScore }));
     }
 
     // Load today's reflection
@@ -104,7 +111,7 @@ export default function Dashboard() {
       .eq("user_id", userId)
       .eq("reflection_date", today)
       .maybeSingle();
-    
+
     if (reflectionData) {
       setTodayReflection(reflectionData);
       setReflectionText(reflectionData.reflection_text);
@@ -119,8 +126,8 @@ export default function Dashboard() {
   const handleEffortSelect = async (habitId: string, effortLevel: number) => {
     if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    const existing = completions.find(c => c.habit_id === habitId);
+    const today = new Date().toISOString().split("T")[0];
+    const existing = completions.find((c) => c.habit_id === habitId);
 
     if (existing) {
       const { error } = await supabase
@@ -133,14 +140,12 @@ export default function Dashboard() {
         return;
       }
     } else {
-      const { error } = await supabase
-        .from("habit_completions")
-        .insert({
-          habit_id: habitId,
-          user_id: user.id,
-          completion_date: today,
-          effort_level: effortLevel
-        });
+      const { error } = await supabase.from("habit_completions").insert({
+        habit_id: habitId,
+        user_id: user.id,
+        completion_date: today,
+        effort_level: effortLevel,
+      });
 
       if (error) {
         toast({ title: "Error logging habit", variant: "destructive" });
@@ -155,7 +160,7 @@ export default function Dashboard() {
   const handleSaveReflection = async () => {
     if (!user || !reflectionText.trim()) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     if (todayReflection) {
       const { error } = await supabase
@@ -168,13 +173,11 @@ export default function Dashboard() {
         return;
       }
     } else {
-      const { error } = await supabase
-        .from("daily_reflections")
-        .insert({
-          user_id: user.id,
-          reflection_date: today,
-          reflection_text: reflectionText
-        });
+      const { error } = await supabase.from("daily_reflections").insert({
+        user_id: user.id,
+        reflection_date: today,
+        reflection_text: reflectionText,
+      });
 
       if (error) {
         toast({ title: "Error saving reflection", variant: "destructive" });
@@ -187,7 +190,7 @@ export default function Dashboard() {
   };
 
   const getCompletionForHabit = (habitId: string) => {
-    return completions.find(c => c.habit_id === habitId);
+    return completions.find((c) => c.habit_id === habitId);
   };
 
   const completedCount = completions.length;
@@ -202,7 +205,7 @@ export default function Dashboard() {
     { day: "Thu", score: 14 },
     { day: "Fri", score: 11 },
     { day: "Sat", score: 13 },
-    { day: "Sun", score: stats.todayScore }
+    { day: "Sun", score: stats.todayScore },
   ];
 
   return (
@@ -308,7 +311,7 @@ export default function Dashboard() {
                       <CardContent className="pt-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div 
+                            <div
                               className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
                               style={{ backgroundColor: `${habit.color}20` }}
                             >
@@ -324,17 +327,21 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex gap-2">
                           {[1, 2, 3, 4].map((level) => (
                             <Button
                               key={level}
-                              variant={completion?.effort_level === level ? "default" : "outline"}
+                              variant={
+                                completion?.effort_level === level
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
                               className="flex-1"
                               onClick={() => handleEffortSelect(habit.id, level)}
                             >
-                              {level} pt{level > 1 ? 's' : ''}
+                              {level} pt{level > 1 ? "s" : ""}
                             </Button>
                           ))}
                         </div>
@@ -358,9 +365,11 @@ export default function Dashboard() {
                   <p className="text-sm italic">
                     "Great progress today! You're building consistency. Keep up the momentum!"
                   </p>
-                  <p className="text-xs text-muted-foreground mt-2">AI-generated encouragement</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    AI-generated encouragement
+                  </p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium mb-2 block">
                     Your thoughts and insights
@@ -372,7 +381,7 @@ export default function Dashboard() {
                     className="min-h-[100px]"
                   />
                 </div>
-                
+
                 <Button onClick={handleSaveReflection} className="w-full">
                   Save Reflection
                 </Button>
@@ -383,7 +392,7 @@ export default function Dashboard() {
           {/* 7-Day Progress Chart */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">7-Day Progress</h2>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Visual Progress Graph</CardTitle>
@@ -391,26 +400,26 @@ export default function Dashboard() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={chartData}>
-                    <XAxis 
-                      dataKey="day" 
+                    <XAxis
+                      dataKey="day"
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                     />
-                    <YAxis 
+                    <YAxis
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                     />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "6px"
+                        borderRadius: "6px",
                       }}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="hsl(var(--primary))" 
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={{ fill: "hsl(var(--primary))", r: 4 }}
                     />
