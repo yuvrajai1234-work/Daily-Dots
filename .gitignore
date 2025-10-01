@@ -1,1 +1,42 @@
 node_modules
+PS C:\Users\yuvra\Coding Projects\Daily-Dots> npm run dev
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite
+
+C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js:83
+                throw new Error(
+                      ^
+
+Error: Cannot find module @rollup/rollup-win32-x64-msvc. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at requireWithFriendlyError (C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js:83:9)
+    at Object.<anonymous> (C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js:92:76)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at cjsLoader (node:internal/modules/esm/translators:315:5)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:207:7) {
+  [cause]: Error: Cannot find module '@rollup/rollup-win32-x64-msvc'
+  Require stack:
+  - C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+      at Function._load (node:internal/modules/cjs/loader:1215:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1491:12)
+      at require (node:internal/modules/helpers:135:16)
+      at requireWithFriendlyError (C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js:65:10)        
+      at Object.<anonymous> (C:\Users\yuvra\Coding Projects\Daily-Dots\node_modules\rollup\dist\native.js:92:76) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      'C:\\Users\\yuvra\\Coding Projects\\Daily-Dots\\node_modules\\rollup\\dist\\native.js'
+    ]
+  }
+}
+
+Node.js v23.11.0
