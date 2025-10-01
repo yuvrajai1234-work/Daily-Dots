@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
 
 export const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -34,7 +35,12 @@ export const SignIn = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="relative flex items-center justify-center min-h-screen bg-background">
+      <Link to="/" className="absolute top-8 left-8">
+        <Button variant="outline" size="icon">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+      </Link>
       <Card className="mx-auto max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Sign In</CardTitle>
