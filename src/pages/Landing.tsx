@@ -11,7 +11,7 @@ const Landing = () => {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter text-white sm:text-5xl xl:text-6xl/none">
-                    DailyDots
+                    Daily Dots
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Transform your daily routines into powerful habits with
@@ -35,7 +35,7 @@ const Landing = () => {
                 </div>
               </div>
               <img
-                src="/product-hunt-collage.png"
+                src="/lpdiscipline.png"
                 width="550"
                 height="550"
                 alt="Hero"
