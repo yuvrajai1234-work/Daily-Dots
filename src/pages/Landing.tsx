@@ -14,9 +14,13 @@ const Landing = () => {
                     Daily Dots
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Transform your daily routines into powerful habits with
-                    AI-powered insights, community support, and gamified
-                    progress-tracking.
+                  Daily Dots isn’t just another habit tracker—it’s the spark that unlocks your potential with every small, consistent action. Through engaging progress tracking, AI-generated insights tailored just for you, and a vibrant community cheering each achievement, this app helps transform routines into lasting, life-changing habits.
+                  </p>
+                  <h3 className="text-xl font-bold">The Power of Daily Dots
+                  </h3>
+                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                  With every check-in, you’re building momentum—even on days when it feels tough. Over time, these small victories accumulate, creating real, visible results in focus, discipline, and achievement. Daily Dots is here as your accountability partner, making it easier to stick with good habits and let go of unhelpful ones, all while celebrating your journey.
+                  Start today, and see how consistent action supported by technology and community can remake not just your routines, but your entire life.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -95,12 +99,12 @@ const Landing = () => {
                 Start Your Journey Today
               </h2>
               <p className="mx-auto max-w-[600px] text-gray-300 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Download our app and start building better habits.
+                Join us and start building better habits.
               </p>
             </div>
             <div className="flex justify-center flex-col sm:flex-row gap-4">
               <Link
-                to="#"
+                to="/sign-up"
                 className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
               >
                 Get Started
@@ -117,7 +121,7 @@ const Landing = () => {
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-muted-foreground">
-          &copy; 2024 DailyDots. All rights reserved.
+          &copy; 2025 DailyDots MetaMorphosis. All rights reserved.
         </p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link to="#" className="text-xs hover:underline underline-offset-4">

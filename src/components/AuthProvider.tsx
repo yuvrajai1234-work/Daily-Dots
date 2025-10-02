@@ -33,10 +33,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Wait until the initial session loading is complete
     if (loading) return;
 
-    // Redirect unauthenticated users to the sign-in page
+    if (session && (location.pathname === "/sign-in" || location.pathname === "/sign-up" || location.pathname === "/")) {
+      navigate("/dashboard");
+    }
+
     if (!session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up" && location.pathname !== "/") {
       navigate("/sign-in");
     }

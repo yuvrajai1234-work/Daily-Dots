@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -62,14 +63,23 @@ export const SignIn = () => {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 relative">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                   <Link to="#" className="ml-auto inline-block text-sm underline">
                     Forgot your password?
                   </Link>
                 </div>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute bottom-1 right-1 h-7 w-7"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
               </div>
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>

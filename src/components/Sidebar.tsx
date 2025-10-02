@@ -20,7 +20,8 @@ import {
   Info,
   LogOut,
   ChevronsRight,
-  LayoutDashboard
+  LayoutDashboard,
+  Settings
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -37,6 +38,7 @@ const navLinks = [
     { to: "/rewards", label: "Rewards", icon: Gift },
     { to: "/ai-assistant", label: "AI Assistant", icon: Bot },
     { to: "/ebooks", label: "E-books", icon: BookOpen },
+    { to: "/settings", label: "Settings", icon: Settings },
     { to: "/about", label: "About Us", icon: Info },
 ];
 
