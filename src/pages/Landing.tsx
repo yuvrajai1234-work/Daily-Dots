@@ -48,6 +48,9 @@ const Landing = () => {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
+                  Key Features
+                </div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
                   Everything You Need to Succeed
                 </h2>
@@ -130,19 +133,13 @@ const Landing = () => {
             </div>
           </div>
         </section>
-        <section
-          className="w-full py-12 md:py-24 lg:py-32 bg-cover bg-center relative"
-          style={{
-            backgroundImage: "url(/everest4-resize-final.jpg)",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 relative">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
+          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight text-white">
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
                 Start Your Journey Today
               </h2>
-              <p className="mx-auto max-w-[600px] text-gray-300 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 Download our app and start building better habits.
               </p>
             </div>

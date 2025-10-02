@@ -115,14 +115,6 @@
 }
 
 @layer components {
-  .hero-background {
-    background-image: url('/nice.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.8;
-  }
-
   .glass {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
