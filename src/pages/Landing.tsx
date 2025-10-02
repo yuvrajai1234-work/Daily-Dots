@@ -48,9 +48,6 @@ const Landing = () => {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
-                  Key Features
-                </div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
                   Everything You Need to Succeed
                 </h2>
@@ -85,61 +82,19 @@ const Landing = () => {
             </div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12">
-              <div className="flex flex-col justify-center space-y-4">
-                <ul className="grid gap-6">
-                  <li>
-                    <div className="grid gap-1">
-                      <h3 className="text-xl font-bold">
-                        Gamified Progress Tracking
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Level up your habits and earn points as you complete
-                        them.
-                      </p>
-                    </div>
-                  </li>
-                  <li>
-                    <div className="grid gap-1">
-                      <h3 className="text-xl font-bold">
-                        Customizable Habit Levels
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Define your own levels of habit mastery, from beginner
-                        to expert.
-                      </p>
-                    </div>
-                  </li>
-                  <li>
-                    <div className="grid gap-1">
-                      <h3 className="text-xl font-bold">XP System</h3>
-                      <p className="text-muted-foreground">
-                        Earn experience points (XP) for each habit level you
-                        achieve.
-                      </p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <img
-                src="/placeholder.svg"
-                width="550"
-                height="310"
-                alt="Features"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-              />
-            </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
+        <section
+          className="w-full py-12 md:py-24 lg:py-32 bg-cover bg-center relative"
+          style={{
+            backgroundImage: "url(/everest4-resize-final.jpg)",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 relative">
             <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight text-white">
                 Start Your Journey Today
               </h2>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              <p className="mx-auto max-w-[600px] text-gray-300 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 Download our app and start building better habits.
               </p>
             </div>
