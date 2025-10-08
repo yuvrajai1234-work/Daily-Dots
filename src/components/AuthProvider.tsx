@@ -1,24 +1,30 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const AuthContext = createContext<{ session: Session | null }>({ session: null });
+// Define the shape of the context
+interface AuthContextType {
+  session: Session | null;
+  setSession: (session: Session | null) => void;
+}
+
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Expose supabase to the window for debugging
+(window as any).supabase = supabase;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const getSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting session:", error.message);
-      }
+      const { data } = await supabase.auth.getSession();
       setSession(data.session);
-      setLoading(false);
     };
 
     getSession();
@@ -33,20 +39,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Wait until the initial session loading is complete
-    if (loading) return;
+    const isAuthPage = location.pathname === "/sign-in" || location.pathname === "/sign-up" || location.pathname === "/";
 
-    // Redirect unauthenticated users to the sign-in page
-    if (!session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up" && location.pathname !== "/") {
+    if (session && isAuthPage) {
+      navigate("/dashboard");
+    }
+
+    if (!session && !isAuthPage) {
       navigate("/sign-in");
     }
-  }, [session, loading, navigate, location.pathname]);
+  }, [session, navigate, location.pathname]);
 
   return (
-    <AuthContext.Provider value={{ session }}>
+    <AuthContext.Provider value={{ session, setSession }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Export the hook to use the context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

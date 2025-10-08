@@ -29,3 +29,5 @@ CREATE TRIGGER set_habit_logs_timestamp
 BEFORE UPDATE ON habit_logs
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
