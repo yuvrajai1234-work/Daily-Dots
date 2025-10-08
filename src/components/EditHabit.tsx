@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Habit } from "./Habits";
+import { Habit } from "./Habits"; // Ensure this type is correct
 
 interface EditHabitProps {
   habit: Habit | null;
@@ -39,7 +39,7 @@ const EditHabit: React.FC<EditHabitProps> = ({ habit, isOpen, onClose, onHabitUp
       const { error } = await supabase
         .from("habits")
         .update({ name, icon, color })
-        .eq("id", habit.id);
+        .eq("id", habit.id); // habit.id is now correctly a string
 
       if (error) {
         throw error;
@@ -68,8 +68,7 @@ const EditHabit: React.FC<EditHabitProps> = ({ habit, isOpen, onClose, onHabitUp
             onChange={(e) => setName(e.target.value)}
           />
           <Input
-            placeholder="Icon (e.g., 
-💪)"
+            placeholder="Icon (e.g., 💪)"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
           />

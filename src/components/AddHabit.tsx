@@ -51,26 +51,34 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
   const { session } = useAuth();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
-  const [color, setColor] = useState("");
+  const [color, setColor] = useState("#e5e7eb");
   const [isOpen, setIsOpen] = useState(false);
+  const [customHabit, setCustomHabit] = useState("");
 
   const handleAddHabit = async () => {
-    if (!session || !name) return;
+    if (!session) return;
+    const habitName = customHabit || name;
+    if (!habitName) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("habits")
-        .insert([{ name, icon, color, user_id: session.user.id }]);
+        .insert([{ name: habitName, icon, color, user_id: session.user.id }])
+        .select();
 
       if (error) {
         throw error;
       }
 
-      onHabitAdded();
-      setIsOpen(false);
-      setName("");
-      setIcon("");
-      setColor("");
+      if (data) {
+        onHabitAdded();
+        setIsOpen(false);
+        setName("");
+        setCustomHabit("");
+        setIcon("");
+        setColor("#e5e7eb");
+      }
+
     } catch (error: any) {
       console.error("Error adding habit:", error.message);
     }
@@ -103,11 +111,11 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
           </Select>
           <Input
             placeholder="Or type a custom habit"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={customHabit || name}
+            onChange={(e) => setCustomHabit(e.target.value)}
           />
           <Input
-            placeholder="Icon (e.g., 💪)" // Default to empty string
+            placeholder="Icon (e.g., 💪)"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
           />

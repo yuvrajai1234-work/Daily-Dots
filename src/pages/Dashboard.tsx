@@ -3,48 +3,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Flame, Trophy, TrendingUp, Zap, Brain, Leaf, Dumbbell } from 'lucide-react';
+import { Calendar, Flame, Trophy, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import AddHabit from "@/components/AddHabit";
+import { supabase } from "@/integrations/supabase/client";
 
 const quickStats = [
-  { title: "Today's Score", value: "12", icon: Calendar, color: "text-blue-500" },
-  { title: "Current Streak", value: "7 Days", icon: Flame, color: "text-orange-500" },
-  { title: "Cycle Score", value: "480", icon: Trophy, color: "text-yellow-500" },
-  { title: "Improvement", value: "+15%", icon: TrendingUp, color: "text-green-500" },
-];
-
-const habits = [
-  { name: "Mindful Morning", icon: Brain, color: "bg-blue-100", completed: true },
-  { name: "Workout", icon: Dumbbell, color: "bg-orange-100", completed: false },
-  { name: "Eat Healthy", icon: Leaf, color: "bg-green-100", completed: true },
-  { name: "Code for 1hr", icon: Zap, color: "bg-yellow-100", completed: false },
+  { title: "Today's Score", value: "0", icon: Calendar, color: "text-blue-500" },
+  { title: "Current Streak", value: "0 Days", icon: Flame, color: "text-orange-500" },
+  { title: "Cycle Score", value: "0", icon: Trophy, color: "text-yellow-500" },
+  { title: "Improvement", value: "+0%", icon: TrendingUp, color: "text-green-500" },
 ];
 
 const chartData = [
-  { day: 'Mon', score: 10 },
-  { day: 'Tue', score: 15 },
-  { day: 'Wed', score: 12 },
-  { day: 'Thu', score: 20 },
-  { day: 'Fri', score: 18 },
-  { day: 'Sat', score: 25 },
-  { day: 'Sun', score: 22 },
+  { day: 'Mon', score: 0 },
+  { day: 'Tue', score: 0 },
+  { day: 'Wed', score: 0 },
+  { day: 'Thu', score: 0 },
+  { day: 'Fri', score: 0 },
+  { day: 'Sat', score: 0 },
+  { day: 'Sun', score: 0 },
 ];
 
 const HabitCard = ({ habit }) => (
-  <Card className={`${habit.color} flex flex-col justify-between`}>
+    <Card style={{ backgroundColor: habit.color }} className="flex flex-col justify-between text-white">
     <CardHeader>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <habit.icon className="w-6 h-6" />
+          <span className="text-2xl">{habit.icon}</span>
           <CardTitle className="text-lg">{habit.name}</CardTitle>
         </div>
         <div className={`w-4 h-4 rounded-full ${habit.completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
       </div>
     </CardHeader>
     <CardContent>
-      <p className="text-sm text-muted-foreground mb-2">Log your effort:</p>
+      <p className="text-sm text-zinc-200 mb-2">Log your effort:</p>
       <div className="flex justify-around">
         {[1, 2, 3, 4].map(level => (
-          <Button key={level} variant="outline" size="sm" className="w-10 h-10 rounded-full">
+          <Button key={level} variant="outline" size="sm" className="w-10 h-10 rounded-full bg-transparent border-white hover:bg-white/10 text-white">
             {level}
           </Button>
         ))}
@@ -54,7 +51,42 @@ const HabitCard = ({ habit }) => (
 );
 
 const Dashboard = () => {
-  const completedHabits = habits.filter(h => h.completed).length;
+  const { session } = useAuth();
+  const [habits, setHabits] = useState([]);
+
+  const fetchHabits = useCallback(async () => {
+    if (!session) return;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('habits')
+      .select(`
+        *,
+        habit_completions (
+          id,
+          completion_date
+        )
+      `)
+      .eq('user_id', session.user.id)
+      .eq('habit_completions.completion_date', today);
+
+    if (error) {
+      console.error('Error fetching habits:', error);
+    } else {
+      const habitsWithCompletionStatus = data.map(habit => ({
+        ...habit,
+        completed: habit.habit_completions.length > 0,
+      }));
+      setHabits(habitsWithCompletionStatus);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session) {
+      fetchHabits();
+    }
+  }, [session, fetchHabits]);
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -78,26 +110,33 @@ const Dashboard = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight">Today's Habits</h2>
-            <p className="text-muted-foreground">{completedHabits} of {habits.length} completed</p>
+            <AddHabit onHabitAdded={fetchHabits} />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {habits.map(habit => (
-              <HabitCard key={habit.name} habit={habit} />
-            ))}
-          </div>
+          {habits.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {habits.map(habit => (
+                <HabitCard key={habit.id} habit={habit} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">You haven't added any habits yet.</p>
+              <p className="text-muted-foreground">Click the "Add New Habit" button to get started.</p>
+            </div>
+          )}
         </div>
 
         {/* AI Daily Reflection */}
-        <Card className="bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/20 dark:to-indigo-900/20">
+        <Card className="bg-gradient-to-br from-purple-50 to-indigo-100 text-zinc-800 dark:from-purple-900/20 dark:to-indigo-900/20 dark:text-zinc-50">
           <CardHeader>
             <CardTitle>AI Daily Reflection</CardTitle>
-            <CardDescription>Your AI companion's thoughts on your progress.</CardDescription>
+            <CardDescription className="text-zinc-600 dark:text-zinc-400">Your AI companion's thoughts on your progress.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm italic text-muted-foreground">
+            <p className="text-sm italic text-zinc-500 dark:text-zinc-400">
               "Great job on staying consistent with your morning routine! Remember, every small step builds significant momentum. What was one thing that went well today?"
             </p>
-            <Textarea placeholder="Write your thoughts and insights here..." />
+            <Textarea placeholder="Write your thoughts and insights here..." className="bg-black/5 dark:bg-black/20" />
             <Button className="w-full">Save Reflection</Button>
           </CardContent>
         </Card>

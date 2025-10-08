@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 export const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +24,7 @@ export const SignIn = () => {
 
     console.log("Signing in with:", { email, password });
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -31,6 +33,7 @@ export const SignIn = () => {
     if (error) {
       setError(error.message);
     } else {
+      setSession(data.session);
       navigate("/dashboard");
     }
   };

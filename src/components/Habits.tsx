@@ -36,7 +36,7 @@ import { MoreHorizontal } from "lucide-react";
 
 // Updated Habit type to match new schema
 export type Habit = {
-  id: number;
+  id: string;
   name: string;
   icon: string | null;
   color: string | null;
@@ -46,8 +46,8 @@ export type Habit = {
 
 // New HabitCompletion type
 export type HabitCompletion = {
-  id: number;
-  habit_id: number;
+  id: string;
+  habit_id: string;
   completion_date: string;
   effort_level: number;
 };
@@ -115,7 +115,7 @@ const Habits = () => {
     setIsEditDialogOpen(false);
   };
 
-  const handleDelete = async (habitId: number) => {
+  const handleDelete = async (habitId: string) => {
     if (!window.confirm("Are you sure you want to delete this habit?")) return;
 
     try {
@@ -128,7 +128,7 @@ const Habits = () => {
   };
 
   // Renamed and updated to handle effort_level
-  const handleEffortChange = async (habitId: number, effortLevel: string) => {
+  const handleEffortChange = async (habitId: string, effortLevel: string) => {
     if (!session) return;
     const today = new Date().toISOString().slice(0, 10);
     const effortNum = parseInt(effortLevel);
@@ -153,7 +153,7 @@ const Habits = () => {
     }
   };
 
-  const getHabitEffortLevel = (habitId: number) => {
+  const getHabitEffortLevel = (habitId: string) => {
     const completion = habitCompletions.find(
       (comp) => comp.habit_id === habitId
     );
@@ -230,7 +230,7 @@ const Habits = () => {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                )))}
               </TableBody>
             </Table>
           )}
