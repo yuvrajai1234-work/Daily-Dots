@@ -1,5 +1,5 @@
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./AuthProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,12 +44,14 @@ const navLinks = [
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const user = session?.user;
   const userName = user?.user_metadata?.full_name || user?.email;
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   const handleLogout = async () => {
       await supabase.auth.signOut();
+      navigate('/sign-in');
   };
 
   return (
