@@ -1,5 +1,5 @@
 
-## Project Description
+## Project Description (DailyDots)
 
 This project is a web application built with Vite, React, and TypeScript. It uses Shadcn for UI components and Supabase for the backend. Data Connect is used for managing the database schema.
 
