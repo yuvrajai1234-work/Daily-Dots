@@ -22,6 +22,7 @@ import About from "./pages/About";
 import ProtectedApp from "./components/ProtectedApp";
 import { AuthProvider } from "./components/AuthProvider";
 import LandingPage from "./pages/Landing";
+import HabitDetail from "./pages/HabitDetail";
 
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/ebooks" element={<Ebooks />} />
               <Route path="/about" element={<About />} />
+              <Route path="/habit/:id" element={<HabitDetail />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Route>
             <Route path="*" element={<NotFound />} />

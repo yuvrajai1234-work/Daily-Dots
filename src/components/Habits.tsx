@@ -27,12 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client"; // Corrected Supabase client
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { useEffect, useState, useCallback } from "react";
 import AddHabit from "./AddHabit";
 import EditHabit from "./EditHabit";
 import { MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
 
 // Updated Habit type to match new schema
 export type Habit = {
@@ -175,7 +176,7 @@ const Habits = () => {
             <p>Loading habits...</p>
           ) : habits.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-lg">You haven't added any habits yet.</p>
+              <p className="text-lg">You haven'''t added any habits yet.</p>
               <p className="text-sm text-muted-foreground">Click "Add New Habit" to get started.</p>
             </div>
           ) : (
@@ -183,19 +184,19 @@ const Habits = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Habit</TableHead>
-                  <TableHead>Today's Effort</TableHead>
+                  <TableHead>Today'''s Effort</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {habits.map((habit) => (
                   <TableRow key={habit.id}>
-                    <TableCell className="font-medium">
-                      <span className="flex items-center">
-                        {habit.icon && <span className="mr-2">{habit.icon}</span>}
-                        {habit.name}
-                      </span>
-                    </TableCell>
+                  <TableCell className="font-medium">
+                    <Link to={`/habit/${habit.id}`} className="flex items-center">
+                      {habit.icon && <span className="mr-2">{habit.icon}</span>}
+                      {habit.name}
+                    </Link>
+                  </TableCell>
                     <TableCell>
                       <Select
                         onValueChange={(value) => handleEffortChange(habit.id, value)}

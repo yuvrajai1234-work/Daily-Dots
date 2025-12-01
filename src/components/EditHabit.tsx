@@ -1,59 +1,51 @@
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
-import { Habit } from "./Habits"; // Ensure this type is correct
+} from "./ui/dialog";
+import { Input } from "./ui/input";
 
-interface EditHabitProps {
-  habit: Habit | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onHabitUpdated: () => void;
-}
-
-const EditHabit: React.FC<EditHabitProps> = ({ habit, isOpen, onClose, onHabitUpdated }) => {
+const EditHabit = ({ habit, onHabitUpdated, isOpen, setIsOpen }) => {
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("");
+  const [emoji, setEmoji] = useState("");
   const [color, setColor] = useState("");
 
   useEffect(() => {
     if (habit) {
-      setName(habit.name);
-      setIcon(habit.icon || "");
-      setColor(habit.color || "");
+      setName(habit.name || "");
+      setEmoji(habit.icon || "");
+      setColor(habit.color || "#ffffff");
     }
   }, [habit]);
 
-  const handleUpdateHabit = async () => {
+  const handleUpdate = async () => {
     if (!habit) return;
 
     try {
       const { error } = await supabase
         .from("habits")
-        .update({ name, icon, color })
-        .eq("id", habit.id); // habit.id is now correctly a string
+        .update({ name, icon: emoji, color })
+        .eq("id", habit.id);
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       onHabitUpdated();
-      onClose();
-    } catch (error: any) {
+      setIsOpen(false);
+    } catch (error) {
       console.error("Error updating habit:", error.message);
     }
   };
 
+  if (!habit) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Habit</DialogTitle>
@@ -61,27 +53,40 @@ const EditHabit: React.FC<EditHabitProps> = ({ habit, isOpen, onClose, onHabitUp
             Update the details of your habit.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            placeholder="Habit name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <Input
-            placeholder="Icon (e.g., 💪)"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-          />
-          <Input
-            type="color"
-            placeholder="Color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-          />
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="name">Habit Name</label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Drink Water"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="emoji">Emoji Icon</label>
+            <Input
+              id="emoji"
+              value={emoji}
+              onChange={(e) => setEmoji(e.target.value)}
+              placeholder="e.g., 💧"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="color">Color</label>
+            <Input
+              id="color"
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+            />
+          </div>
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleUpdateHabit}>Save Changes</Button>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleUpdate}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
