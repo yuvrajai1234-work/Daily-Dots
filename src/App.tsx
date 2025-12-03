@@ -11,7 +11,7 @@ import Profile from "./pages/Profile";
 import Analytics from "./pages/Analytics";
 import Calendar from "./pages/Calendar";
 import Achievements from "./pages/Achievements";
-import Journal from "./pages/Journal";
+import JournalPage from "./pages/JournalPage";
 import Community from "./pages/Community";
 import Reminders from "./pages/Reminders";
 import EarnCoins from "./pages/EarnCoins";
@@ -19,6 +19,7 @@ import Rewards from "./pages/Rewards";
 import AIAssistant from "./pages/AIAssistant";
 import Ebooks from "./pages/Ebooks";
 import About from "./pages/About";
+import Settings from "./pages/Settings";
 import ProtectedApp from "./components/ProtectedApp";
 import { AuthProvider } from "./components/AuthProvider";
 import LandingPage from "./pages/Landing";
@@ -48,7 +49,7 @@ const App = () => (
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/achievements" element={<Achievements />} />
-              <Route path="/journal" element={<Journal />} />
+              <Route path="/journal" element={<JournalPage />} />
               <Route path="/community" element={<Community />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/earn-coins" element={<EarnCoins />} />
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/ebooks" element={<Ebooks />} />
               <Route path="/about" element={<About />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/habit/:id" element={<HabitDetail />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Route>
