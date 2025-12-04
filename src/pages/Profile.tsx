@@ -110,13 +110,13 @@ const Profile = () => {
     <div className="space-y-6 p-4 md:p-8">
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+        <CardTitle>Welcome, {username || 'User'}!</CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center"><User className="mr-2" /> User Information</CardTitle>
+              <CardTitle className="flex items-center"><User className="mr-2" />{username || 'User Information'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={updateProfile} className="space-y-4">

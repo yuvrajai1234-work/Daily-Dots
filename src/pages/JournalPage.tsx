@@ -143,8 +143,6 @@ const JournalPage = () => {
             daily_reflection: dailyReflection,
             mistakes_reflection: mistakesReflection,
             success_steps: successSteps,
-            todos: todos,
-            mood: mood,
         };
         const { error: insertError } = await supabase.from('journal_entries').insert(entryPayload);
         if (insertError) throw insertError;
@@ -159,7 +157,7 @@ const JournalPage = () => {
         setLastEntryDate(today);
     } catch (err) {
         console.error("Error saving entry:", err.message);
-        toast.error("Failed to save entry. Please try again.");
+        toast.error(`Failed to save entry: ${err.message}`);
     }
   };
 
@@ -322,7 +320,6 @@ const JournalPage = () => {
                           <CardDescription>{new Date(entry.created_at).toLocaleTimeString()}</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          {entry.mood && <div className="text-2xl">{entry.mood}</div>}
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="destructive" size="sm">Delete</Button></AlertDialogTrigger>
                             <AlertDialogContent>
@@ -337,19 +334,6 @@ const JournalPage = () => {
                           <h3 className="font-semibold mb-2">Daily Reflection</h3>
                           <p className="whitespace-pre-wrap text-muted-foreground">{entry.daily_reflection}</p>
                         </div>
-                        {entry.todos && entry.todos.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold mb-2">To-Do List</h3>
-                            <ul className="space-y-2">
-                              {entry.todos.map(todo => (
-                                <li key={todo.id} className="flex items-center gap-3">
-                                  <Checkbox id={`past-todo-${todo.id}`} checked={todo.completed} disabled />
-                                  <label htmlFor={`past-todo-${todo.id}`} className={`text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>{todo.text}</label>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
                         {entry.mistakes_reflection && (
                           <div>
                             <h3 className="font-semibold mb-2">Mistakes and Reflection</h3>

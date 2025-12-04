@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export const SignUp = () => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,22 +28,33 @@ export const SignUp = () => {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      },
     });
 
-    setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message);
+      return;
+    }
+
+    if (signUpData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({ id: signUpData.user.id, username: username });
+        
+        if (profileError) {
+            setLoading(false);
+            setError(profileError.message);
+            // Optionally, you might want to handle user deletion here if profile creation fails
+        } else {
+            setLoading(false);
+            navigate("/dashboard");
+        }
     } else {
-      navigate("/dashboard");
+        setLoading(false);
+        setError("Sign up successful, but no user data returned.");
     }
   };
 
@@ -64,15 +75,9 @@ export const SignUp = () => {
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="first-name">First name</Label>
-                  <Input id="first-name" placeholder="Max" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="last-name">Last name</Label>
-                  <Input id="last-name" placeholder="Robinson" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                </div>
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" placeholder="maxrobinson" required value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>

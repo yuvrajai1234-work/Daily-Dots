@@ -1,9 +1,0 @@
-CREATE TABLE IF NOT EXISTS public.habits (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  icon TEXT NOT NULL,
-  color TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);

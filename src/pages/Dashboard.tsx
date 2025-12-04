@@ -17,16 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const chartData = [
-  { day: 'Mon', score: 0 },
-  { day: 'Tue', score: 0 },
-  { day: 'Wed', score: 0 },
-  { day: 'Thu', score: 0 },
-  { day: 'Fri', score: 0 },
-  { day: 'Sat', score: 0 },
-  { day: 'Sun', score: 0 },
-];
-
 const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
   <Card style={{ backgroundColor: habit.color }} className="flex flex-col justify-between text-white">
     <CardHeader>
@@ -78,35 +68,25 @@ const Dashboard = () => {
   const [editingHabit, setEditingHabit] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [reflection, setReflection] = useState("");
+  const [chartData, setChartData] = useState([]);
 
-  const calculateStats = useCallback(async () => {
-    if (!session) return;
-
-    const { data: completions, error } = await supabase
-      .from('habit_completions')
-      .select('completion_date, effort_level')
-      .eq('user_id', session.user.id);
-
-    if (error) {
-      console.error('Error fetching habit completions for stats:', error);
-      return;
-    }
-
+  const processData = useCallback((completions) => {
     const today = new Date().toISOString().slice(0, 10);
-
     const todayCompletions = completions.filter(c => c.completion_date === today);
     const todayScore = todayCompletions.length;
 
     const completionDates = new Set(completions.map(c => c.completion_date));
     let currentStreak = 0;
-    if (completionDates.has(today)) {
-      currentStreak = 1;
-      let yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      while (completionDates.has(yesterday.toISOString().slice(0, 10))) {
+    let checkDate = new Date();
+    
+    // If no completion today, start checking from yesterday
+    if (!completionDates.has(checkDate.toISOString().slice(0, 10))) {
+        checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    while (completionDates.has(checkDate.toISOString().slice(0, 10))) {
         currentStreak++;
-        yesterday.setDate(yesterday.getDate() - 1);
-      }
+        checkDate.setDate(checkDate.getDate() - 1);
     }
 
     const todayDate = new Date();
@@ -114,23 +94,21 @@ const Dashboard = () => {
     const startOfWeek = new Date(todayDate);
     startOfWeek.setDate(todayDate.getDate() - dayOfWeek);
 
-    const datesOfWeek = [];
-    for (let i = 0; i < 7; i++) {
+    const datesOfWeek = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
-      datesOfWeek.push(date.toISOString().slice(0, 10));
-    }
+      return date.toISOString().slice(0, 10);
+    });
     const currentWeekCompletions = completions.filter(c => datesOfWeek.includes(c.completion_date));
     const cycleScore = currentWeekCompletions.length;
 
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-    const datesOfLastWeek = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfLastWeek);
-      date.setDate(startOfLastWeek.getDate() + i);
-      datesOfLastWeek.push(date.toISOString().slice(0, 10));
-    }
+    const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(startOfLastWeek);
+        date.setDate(startOfLastWeek.getDate() + i);
+        return date.toISOString().slice(0, 10);
+    });
     const lastWeekCompletions = completions.filter(c => datesOfLastWeek.includes(c.completion_date));
     const lastWeekScore = lastWeekCompletions.length;
 
@@ -147,42 +125,76 @@ const Dashboard = () => {
       cycleScore: cycleScore,
       improvement: Math.round(improvement),
     });
-  }, [session]);
 
-  const fetchHabits = useCallback(async () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const newChartData = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        const dayStr = date.toISOString().slice(0, 10);
+        const dayName = days[date.getDay()];
+        const score = completions.filter(c => c.completion_date === dayStr).length;
+        return { day: dayName, score };
+    });
+
+    setChartData(newChartData);
+  }, []);
+
+  const fetchData = useCallback(async () => {
     if (!session) return;
+    
+    const { data: completions, error } = await supabase
+      .from('habit_completions')
+      .select('completion_date, effort_level')
+      .eq('user_id', session.user.id);
+
+    if (error) {
+      console.error('Error fetching habit completions:', error);
+      return;
+    }
+    
+    processData(completions);
+    
     const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabase
+    const { data: habits, error: habitsError } = await supabase
       .from('habits')
       .select('*, habit_completions (id, completion_date)')
       .eq('user_id', session.user.id)
       .eq('habit_completions.completion_date', today);
 
-    if (error) {
-      console.error('Error fetching habits:', error);
+    if (habitsError) {
+      console.error('Error fetching habits:', habitsError);
     } else {
-      const habitsWithCompletionStatus = data.map(habit => ({
+      const habitsWithCompletionStatus = habits.map(habit => ({
         ...habit,
         completed: habit.habit_completions.length > 0,
       }));
       setHabits(habitsWithCompletionStatus);
     }
-  }, [session]);
+  }, [session, processData]);
 
   useEffect(() => {
     if (session) {
-      fetchHabits();
-      calculateStats();
+      fetchData();
     }
-  }, [session, fetchHabits, calculateStats]);
+
+    const subscription = supabase
+      .channel('public:habit_completions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [session, fetchData]);
 
   const handleDelete = async (habitId) => {
     if (!window.confirm("Are you sure you want to delete this habit?")) return;
     try {
       const { error } = await supabase.from("habits").delete().eq("id", habitId);
       if (error) throw error;
-      fetchHabits();
-      calculateStats();
+      fetchData();
     } catch (error) {
       console.error("Error deleting habit:", error.message);
     }
@@ -209,8 +221,7 @@ const Dashboard = () => {
           { onConflict: 'habit_id, completion_date' }
         );
       if (error) throw error;
-      fetchHabits();
-      calculateStats();
+      fetchData();
     } catch (error) {
       console.error("Error logging habit effort:", error.message);
     }
@@ -261,7 +272,7 @@ const Dashboard = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight">Today's Habits</h2>
-            <AddHabit onHabitAdded={() => { fetchHabits(); calculateStats(); }} />
+            <AddHabit onHabitAdded={fetchData} />
           </div>
           {habits.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
@@ -319,10 +330,7 @@ const Dashboard = () => {
       {editingHabit && (
         <EditHabit
           habit={editingHabit}
-          onHabitUpdated={() => {
-            fetchHabits();
-            calculateStats();
-          }}
+          onHabitUpdated={fetchData}
           isOpen={isEditModalOpen}
           setIsOpen={setIsEditModalOpen}
         />
