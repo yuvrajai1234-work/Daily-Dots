@@ -22,27 +22,60 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const HabitDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [habit, setHabit] = useState<Habit | null>(null);
   const [loading, setLoading] = useState(true);
+  const [monthlyScore, setMonthlyScore] = useState(0);
+  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchHabit = async () => {
+    const fetchHabitData = async () => {
       if (!id) return;
 
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data: habitData, error: habitError } = await supabase
           .from("habits")
           .select("*")
           .eq("id", id)
           .single();
 
-        if (error) throw error;
-        setHabit(data);
+        if (habitError) throw habitError;
+        setHabit(habitData);
+
+        const { data: completions, error: completionsError } = await supabase
+          .from('habit_completions')
+          .select('completion_date, effort_level')
+          .eq('habit_id', id);
+
+        if (completionsError) throw completionsError;
+
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        const monthlyCompletions = completions.filter(c => {
+            const completionDate = new Date(c.completion_date);
+            return completionDate.getMonth() === currentMonth && completionDate.getFullYear() === currentYear;
+        });
+
+        const score = monthlyCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+        setMonthlyScore(score);
+
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const newChartData = Array.from({ length: daysInMonth }, (_, i) => {
+            const day = i + 1;
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const completion = monthlyCompletions.find(c => c.completion_date === dateStr);
+            return { day: day, score: completion ? completion.effort_level : 0 };
+        });
+
+        setChartData(newChartData);
+
       } catch (error: any) {
         console.error("Error fetching habit details:", error.message);
       } finally {
@@ -50,7 +83,7 @@ const HabitDetail = () => {
       }
     };
 
-    fetchHabit();
+    fetchHabitData();
   }, [id]);
 
   const handleDelete = async () => {
@@ -72,17 +105,38 @@ const HabitDetail = () => {
   if (!habit) {
     return <div>Habit not found.</div>;
   }
+  
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const maxScore = daysInMonth * 4;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{habit.name}</CardTitle>
         <CardDescription>
-          Created on: {new Date(habit.created_at).toLocaleDateString()}
+          Created on: {new Date(habit.created_at).toLocaleDateString('en-GB')}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <p>Details about the habit will go here.</p>
+      <CardContent className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium">Monthly Score</h3>
+          <p className="text-2xl font-bold">{monthlyScore} / {maxScore}</p>
+        </div>
+        <div>
+            <h3 className="text-lg font-medium">Monthly Progress</h3>
+            <div className="h-64 mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis domain={[0, 4]} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="score" stroke={habit.color || '#8884d8'} strokeWidth={2} activeDot={{ r: 8 }} />
+                </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
       </CardContent>
       <CardFooter>
         <AlertDialog>

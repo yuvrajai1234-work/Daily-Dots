@@ -47,7 +47,7 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
       <p className="text-sm text-zinc-200 mb-2">Log your effort:</p>
       <div className="flex justify-around">
         {[1, 2, 3, 4].map(level => (
-          <Button key={level} variant="outline" size="sm" className="w-10 h-10 rounded-full bg-transparent border-white hover:bg-white/10 text-white" onClick={() => onLogEffort(habit.id, level)}>
+          <Button key={level} variant="outline" size="sm" className={`w-10 h-10 rounded-full bg-transparent border-white hover:bg-white/10 text-white ${habit.effortLevel === level ? 'bg-black/30' : ''}`} onClick={() => onLogEffort(habit, level)}>
             {level}
           </Button>
         ))}
@@ -59,6 +59,8 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
 const Dashboard = () => {
   const { session } = useAuth();
   const [habits, setHabits] = useState([]);
+  const [username, setUsername] = useState('');
+  const [greeting, setGreeting] = useState('');
   const [stats, setStats] = useState({
     todayScore: 0,
     currentStreak: 0,
@@ -69,17 +71,17 @@ const Dashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [reflection, setReflection] = useState("");
   const [chartData, setChartData] = useState([]);
+  const [selectedColor, setSelectedColor] = useState('#8884d8');
 
   const processData = useCallback((completions) => {
     const today = new Date().toISOString().slice(0, 10);
     const todayCompletions = completions.filter(c => c.completion_date === today);
-    const todayScore = todayCompletions.length;
+    const todayScore = todayCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
     const completionDates = new Set(completions.map(c => c.completion_date));
     let currentStreak = 0;
     let checkDate = new Date();
     
-    // If no completion today, start checking from yesterday
     if (!completionDates.has(checkDate.toISOString().slice(0, 10))) {
         checkDate.setDate(checkDate.getDate() - 1);
     }
@@ -100,7 +102,7 @@ const Dashboard = () => {
       return date.toISOString().slice(0, 10);
     });
     const currentWeekCompletions = completions.filter(c => datesOfWeek.includes(c.completion_date));
-    const cycleScore = currentWeekCompletions.length;
+    const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfWeek.getDate() - 7);
@@ -110,7 +112,7 @@ const Dashboard = () => {
         return date.toISOString().slice(0, 10);
     });
     const lastWeekCompletions = completions.filter(c => datesOfLastWeek.includes(c.completion_date));
-    const lastWeekScore = lastWeekCompletions.length;
+    const lastWeekScore = lastWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
     let improvement = 0;
     if (lastWeekScore > 0) {
@@ -132,16 +134,46 @@ const Dashboard = () => {
         date.setDate(date.getDate() - (6 - i));
         const dayStr = date.toISOString().slice(0, 10);
         const dayName = days[date.getDay()];
-        const score = completions.filter(c => c.completion_date === dayStr).length;
+        const score = completions.filter(c => c.completion_date === dayStr).reduce((acc, curr) => acc + curr.effort_level, 0);
         return { day: dayName, score };
     });
 
     setChartData(newChartData);
   }, []);
 
+  const fetchUsername = useCallback(async () => {
+    if (!session) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching username:", error);
+        return;
+    }
+    setUsername(data?.username || session.user.email.split('@')[0]);
+  }, [session]);
+
+  useEffect(() => {
+      if (username) {
+          const hour = new Date().getHours();
+          if (hour < 12) {
+              setGreeting(`Good Morning, ${username}!`);
+          } else if (hour < 18) {
+              setGreeting(`Good Afternoon, ${username}!`);
+          } else {
+              setGreeting(`Good Evening, ${username}!`);
+          }
+      }
+  }, [username]);
+
   const fetchData = useCallback(async () => {
     if (!session) return;
     
+    fetchUsername();
+
     const { data: completions, error } = await supabase
       .from('habit_completions')
       .select('completion_date, effort_level')
@@ -157,7 +189,7 @@ const Dashboard = () => {
     const today = new Date().toISOString().split('T')[0];
     const { data: habits, error: habitsError } = await supabase
       .from('habits')
-      .select('*, habit_completions (id, completion_date)')
+      .select('*, habit_completions (id, completion_date, effort_level)')
       .eq('user_id', session.user.id)
       .eq('habit_completions.completion_date', today);
 
@@ -167,10 +199,11 @@ const Dashboard = () => {
       const habitsWithCompletionStatus = habits.map(habit => ({
         ...habit,
         completed: habit.habit_completions.length > 0,
+        effortLevel: habit.habit_completions.length > 0 ? habit.habit_completions[0].effort_level : 0,
       }));
       setHabits(habitsWithCompletionStatus);
     }
-  }, [session, processData]);
+  }, [session, processData, fetchUsername]);
 
   useEffect(() => {
     if (session) {
@@ -205,7 +238,8 @@ const Dashboard = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleLogEffort = async (habitId, effortLevel) => {
+  const handleLogEffort = async (habit, effortLevel) => {
+    setSelectedColor(habit.color);
     if (!session) return;
     const todayISO = new Date().toISOString().slice(0, 10);
     try {
@@ -213,7 +247,7 @@ const Dashboard = () => {
         .from("habit_completions")
         .upsert(
           {
-            habit_id: habitId,
+            habit_id: habit.id,
             user_id: session.user.id,
             completion_date: todayISO,
             effort_level: effortLevel,
@@ -254,6 +288,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
+      <h1 className="text-3xl font-bold tracking-tight">{greeting}</h1>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {quickStats.map(stat => (
           <Card key={stat.title}>
@@ -321,7 +356,7 @@ const Dashboard = () => {
                 <XAxis dataKey="day" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={2} activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="score" stroke={selectedColor} strokeWidth={2} activeDot={{ r: 8 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

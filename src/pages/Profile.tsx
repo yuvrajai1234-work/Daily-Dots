@@ -43,9 +43,20 @@ const Profile = () => {
     setLoading(true);
 
     async function fetchData() {
-        // Fetch initial data
-        const [profileData, habitsData, completionsTodayData, completionsOverallData, friendsData] = await Promise.all([
-            supabase.from('profiles').select('username, strength, agility, intellect, stamina, wisdom, charisma').eq('id', user.id).single(),
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('username, strength, agility, intellect, stamina, wisdom, charisma')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116: single row not found
+            console.error('Error fetching profile:', profileError);
+            toast.error('Failed to fetch profile data.');
+            if (!ignore) setLoading(false);
+            return;
+        }
+
+        const [habitsData, completionsTodayData, completionsOverallData, friendsData] = await Promise.all([
             supabase.from('habits').select('id', { count: 'exact' }).eq('user_id', user.id),
             supabase.from('habit_completions').select('id', { count: 'exact' }).eq('user_id', user.id).gte('completed_at', new Date().toISOString().slice(0, 10)),
             supabase.from('habit_completions').select('id', { count: 'exact' }).eq('user_id', user.id),
@@ -53,34 +64,34 @@ const Profile = () => {
         ]);
 
         if (!ignore) {
-            if (profileData.data) {
-                const { username, ...stats } = profileData.data;
-                setUsername(username || '');
+            if (profileData) {
+                const { username: dbUsername, ...stats } = profileData;
+                setUsername(dbUsername || (user.email ? user.email.split('@')[0] : ''));
                 const statsArray = Object.keys(stats).map(key => ({ stat: key.charAt(0).toUpperCase() + key.slice(1), value: stats[key] }));
                 setCharacterStats(statsArray);
+            } else {
+                setUsername(user.email ? user.email.split('@')[0] : '');
             }
             setHabitsEnrolled(habitsData.count || 0);
             setHabitsCompletedToday(completionsTodayData.count || 0);
             setHabitsCompletedOverall(completionsOverallData.count || 0);
             setFriendsCount(friendsData.count || 0);
+            setLoading(false);
         }
     }
 
     fetchData();
-    setLoading(false);
 
-    // Setup subscriptions
-    const profileChannel = supabase.channel('profile-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, () => fetchData()).subscribe();
-    const habitsChannel = supabase.channel('habits-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe();
-    const completionsChannel = supabase.channel('completions-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe();
-    const friendsChannel = supabase.channel('friends-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'friends', filter: `or(user_id.eq.${user.id},friend_id.eq.${user.id})` }, () => fetchData()).subscribe();
+    const subscriptions = [
+      supabase.channel('profile-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('habits-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('completions-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('friends-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'friends', filter: `or(user_id.eq.${user.id},friend_id.eq.${user.id})` }, () => fetchData()).subscribe()
+    ];
 
     return () => {
       ignore = true;
-      supabase.removeChannel(profileChannel);
-      supabase.removeChannel(habitsChannel);
-      supabase.removeChannel(completionsChannel);
-      supabase.removeChannel(friendsChannel);
+      subscriptions.forEach(sub => supabase.removeChannel(sub));
     };
   }, [user]);
 
@@ -116,7 +127,7 @@ const Profile = () => {
           <div className="md:col-span-1 space-y-4">
             <Card>
               <CardHeader>
-              <CardTitle className="flex items-center"><User className="mr-2" />{username || 'User Information'}</CardTitle>
+              <CardTitle className="flex items-center"><User className="mr-2" />User Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={updateProfile} className="space-y-4">

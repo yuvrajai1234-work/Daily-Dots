@@ -3,29 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useStickyState } from "@/hooks/useStickyState";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { EntryViewer } from "@/components/EntryViewer";
 import { Plus, Trash2, Terminal, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 
 // Mock function to get AI motivation
 const getAIMotivation = async () => {
@@ -57,7 +46,7 @@ const JournalPage = () => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [browsingDate, setBrowsingDate] = useState(new Date());
   
   // Clear fields if it's a new day
   useEffect(() => {
@@ -88,18 +77,16 @@ const JournalPage = () => {
       setLoading(true);
       setError(null);
       try {
-        let query = supabase
+        const from = startOfDay(browsingDate).toISOString();
+        const to = endOfDay(browsingDate).toISOString();
+
+        let { data, error: fetchError } = await supabase
           .from("journal_entries")
           .select("*")
-          .eq("user_id", session.user.id);
-
-        if (selectedDate) {
-          const from = format(selectedDate, 'yyyy-MM-dd HH:mm:ss');
-          const to = format(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd HH:mm:ss');
-          query = query.gte('created_at', from).lt('created_at', to);
-        }
-
-        const { data, error: fetchError } = await query.order("created_at", { ascending: false });
+          .eq("user_id", session.user.id)
+          .gte('created_at', from)
+          .lt('created_at', to)
+          .order("created_at", { ascending: false });
 
         if (fetchError) throw fetchError;
         setEntries(data || []);
@@ -130,7 +117,7 @@ const JournalPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session, selectedDate]);
+  }, [session, browsingDate]);
   
   const handleSaveJournal = async () => {
     if (dailyReflection.trim() === '') {
@@ -143,6 +130,7 @@ const JournalPage = () => {
             daily_reflection: dailyReflection,
             mistakes_reflection: mistakesReflection,
             success_steps: successSteps,
+            mood: mood,
         };
         const { error: insertError } = await supabase.from('journal_entries').insert(entryPayload);
         if (insertError) throw insertError;
@@ -155,6 +143,7 @@ const JournalPage = () => {
         setTodos([]);
         setMood(null);
         setLastEntryDate(today);
+        setBrowsingDate(new Date()); // Refresh to today's entries
     } catch (err) {
         console.error("Error saving entry:", err.message);
         toast.error(`Failed to save entry: ${err.message}`);
@@ -187,6 +176,12 @@ const JournalPage = () => {
   const handleToggleTodo = (id) => {
     setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
   };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setBrowsingDate(date);
+    }
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -288,14 +283,13 @@ const JournalPage = () => {
             <PopoverTrigger asChild>
               <Button variant={"outline"} className="w-[280px] justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                {format(browsingDate, "PPP")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
+              <Calendar mode="single" selected={browsingDate} onSelect={handleDateChange} initialFocus />
             </PopoverContent>
           </Popover>
-          {selectedDate && <Button variant="ghost" onClick={() => setSelectedDate(undefined)}>Clear</Button>}
         </div>
         {loading ? (
           <p className="text-muted-foreground">Loading journal entries...</p>
@@ -305,60 +299,13 @@ const JournalPage = () => {
             <AlertTitle>Fetch Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        ) : entries.length > 0 ? (
-          <Carousel className="w-full max-w-4xl mx-auto">
-            <CarouselContent>
-              {entries.map((entry) => (
-                <CarouselItem key={entry.id}>
-                  <div className="p-1">
-                    <Card>
-                      <CardHeader className="flex flex-row justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl">
-                            {new Date(entry.created_at).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                          </CardTitle>
-                          <CardDescription>{new Date(entry.created_at).toLocaleTimeString()}</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm">Delete</Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this journal entry.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteJournal(entry.id)}>Continue</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <h3 className="font-semibold mb-2">Daily Reflection</h3>
-                          <p className="whitespace-pre-wrap text-muted-foreground">{entry.daily_reflection}</p>
-                        </div>
-                        {entry.mistakes_reflection && (
-                          <div>
-                            <h3 className="font-semibold mb-2">Mistakes and Reflection</h3>
-                            <p className="whitespace-pre-wrap text-muted-foreground">{entry.mistakes_reflection}</p>
-                          </div>
-                        )}
-                        {entry.success_steps && (
-                          <div>
-                            <h3 className="font-semibold mb-2">Steps Towards Success</h3>
-                            <p className="whitespace-pre-wrap text-muted-foreground">{entry.success_steps}</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
         ) : (
-          <Card>
-            <CardContent className="pt-6"><p className="text-muted-foreground">No entries found for this date.</p></CardContent>
-          </Card>
+          <EntryViewer 
+            entries={entries} 
+            browsingDate={browsingDate} 
+            setBrowsingDate={setBrowsingDate} 
+            handleDeleteJournal={handleDeleteJournal} 
+          />
         )}
       </div>
     </div>
