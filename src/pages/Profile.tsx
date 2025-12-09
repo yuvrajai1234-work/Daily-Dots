@@ -1,220 +1,178 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/components/AuthProvider";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { User, Key, UserCheck, UserPlus, FileText, Star, Users } from "lucide-react";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { Badge } from "@/components/ui/badge";
 
-const CharacterStatsChart = ({ data }) => (
-  <ResponsiveContainer width="100%" height={300}>
-    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
-      <PolarGrid />
-      <PolarAngleAxis dataKey="stat" />
-      <PolarRadiusAxis angle={30} domain={[0, 100]} />
-      <Radar name="Mike" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-    </RadarChart>
-  </ResponsiveContainer>
-);
-
-const Profile = () => {
-  const { session } = useAuth();
-  const user = session?.user;
-  const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState('');
-  const [habitsEnrolled, setHabitsEnrolled] = useState(0);
-  const [habitsCompletedToday, setHabitsCompletedToday] = useState(0);
-  const [habitsCompletedOverall, setHabitsCompletedOverall] = useState(0);
-  const [friendsCount, setFriendsCount] = useState(0);
-  const [characterStats, setCharacterStats] = useState([]);
-
-  useEffect(() => {
-    if (!user) {
-        setLoading(false);
-        return;
-    }
-
-    let ignore = false;
-    setLoading(true);
-
-    async function fetchData() {
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('username, strength, agility, intellect, stamina, wisdom, charisma')
-            .eq('id', user.id)
-            .single();
-
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116: single row not found
-            console.error('Error fetching profile:', profileError);
-            toast.error('Failed to fetch profile data.');
-            if (!ignore) setLoading(false);
-            return;
-        }
-
-        const [habitsData, completionsTodayData, completionsOverallData, friendsData] = await Promise.all([
-            supabase.from('habits').select('id', { count: 'exact' }).eq('user_id', user.id),
-            supabase.from('habit_completions').select('id', { count: 'exact' }).eq('user_id', user.id).gte('completed_at', new Date().toISOString().slice(0, 10)),
-            supabase.from('habit_completions').select('id', { count: 'exact' }).eq('user_id', user.id),
-            supabase.from('friends').select('id', { count: 'exact' }).or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-        ]);
-
-        if (!ignore) {
-            if (profileData) {
-                const { username: dbUsername, ...stats } = profileData;
-                setUsername(dbUsername || (user.email ? user.email.split('@')[0] : ''));
-                const statsArray = Object.keys(stats).map(key => ({ stat: key.charAt(0).toUpperCase() + key.slice(1), value: stats[key] }));
-                setCharacterStats(statsArray);
-            } else {
-                setUsername(user.email ? user.email.split('@')[0] : '');
-            }
-            setHabitsEnrolled(habitsData.count || 0);
-            setHabitsCompletedToday(completionsTodayData.count || 0);
-            setHabitsCompletedOverall(completionsOverallData.count || 0);
-            setFriendsCount(friendsData.count || 0);
-            setLoading(false);
-        }
-    }
-
-    fetchData();
-
-    const subscriptions = [
-      supabase.channel('profile-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('habits-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('completions-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions', filter: `user_id=eq.${user.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('friends-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'friends', filter: `or(user_id.eq.${user.id},friend_id.eq.${user.id})` }, () => fetchData()).subscribe()
-    ];
-
-    return () => {
-      ignore = true;
-      subscriptions.forEach(sub => supabase.removeChannel(sub));
-    };
-  }, [user]);
-
-  async function updateProfile(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (user) {
-        setLoading(true);
-        const updates = {
-            id: user.id,
-            username,
-            updated_at: new Date(),
-        };
-
-        const { error } = await supabase.from('profiles').upsert(updates);
-
-        if (error) {
-            toast.error(error.message);
-        } else {
-            toast.success('Profile updated successfully!');
-        }
-        setLoading(false);
-    }
-  }
-
+const ProfilePage = () => {
   return (
-    <div className="space-y-6 p-4 md:p-8">
-      <Card>
-        <CardHeader>
-        <CardTitle>Welcome, {username || 'User'}!</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-1 space-y-4">
-            <Card>
+    <div className="p-8 bg-black min-h-screen font-sans text-white">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Left Column */}
+        <div className="md:col-span-1 space-y-8">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <Avatar className="w-32 h-32 mb-4 border-4 border-gray-700 shadow-lg">
+                <AvatarImage src="/placeholder.svg" alt="Jill Anderson" />
+                <AvatarFallback>JA</AvatarFallback>
+              </Avatar>
+              <h1 className="text-2xl font-bold text-white">Jill Anderson</h1>
+              <p className="text-red-500">UI Designer</p>
+              <p className="mt-4 text-gray-400 italic">"I'm looking for a site that will simplify the planning of my business trips."</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <div className="space-y-4 text-white">
+                <div className="flex justify-between">
+                  <span className="font-semibold">Age:</span>
+                  <span>26</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Status:</span>
+                  <span>Single</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Location:</span>
+                  <span>Brooklyn</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Archetype:</span>
+                  <span>Frequent Flyer</span>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Badge variant="destructive">Organized</Badge>
+                <Badge variant="destructive">Proactive</Badge>
+                <Badge variant="destructive">Hardworking</Badge>
+                <Badge variant="destructive">Punctual</Badge>
+                <Badge variant="destructive">Resilient</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="md:col-span-2 space-y-8">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader>
+              <CardTitle>Bio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400">
+                Jill is a Regional Director who travels 4-6 times each month for work. She has a specific region in which she travels, and she often visits the same cities and stays at the same hotel. She is frustrated by the fact that no matter how frequently she takes similar trips, she spends hours of her day booking travel. She expects her travel solutions to be as organized as she is.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="bg-gray-800 border-gray-700 text-white">
               <CardHeader>
-              <CardTitle className="flex items-center"><User className="mr-2" />User Information</CardTitle>
+                <CardTitle>Personality</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={updateProfile} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={user?.email || ''} disabled />
+              <CardContent className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-sm text-gray-400 mb-1">
+                    <span>Introvert</span>
+                    <span>Extrovert</span>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input 
-                        id="username" 
-                        type="text" 
-                        value={username} 
-                        onChange={(e) => setUsername(e.target.value)} 
-                        disabled={loading}
-                    />
+                  <Slider defaultValue={[30]} max={100} step={1} />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm text-gray-400 mb-1">
+                    <span>Analytical</span>
+                    <span>Creative</span>
                   </div>
-                  <p className="flex items-center text-sm text-muted-foreground"><Star className="mr-2 h-4 w-4" /><strong>Character Rank:</strong> Rookie</p>
-                  <div className="flex space-x-2">
-                    <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                    <Button variant="outline" className="w-full" disabled><Key className="mr-2 h-4 w-4" />Change Password</Button>
+                  <Slider defaultValue={[70]} max={100} step={1} />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm text-gray-400 mb-1">
+                    <span>Loyal</span>
+                    <span>Fickle</span>
                   </div>
-                </form>
+                  <Slider defaultValue={[20]} max={100} step={1} />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm text-gray-400 mb-1">
+                    <span>Passive</span>
+                    <span>Active</span>
+                  </div>
+                  <Slider defaultValue={[60]} max={100} step={1} />
+                </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gray-800 border-gray-700 text-white">
               <CardHeader>
-                <CardTitle className="flex items-center"><Users className="mr-2" />Friends</CardTitle>
+                <CardTitle>Motivations</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{friendsCount}</p>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium">Price</p>
+                  <Progress value={40} className="h-2 bg-gray-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Combat</p>
+                  <Progress value={80} className="h-2 bg-gray-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Convenience</p>
+                  <Progress value={90} className="h-2 bg-gray-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Speed</p>
+                  <Progress value={30} className="h-2 bg-gray-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Loyalty/Miles</p>
+                  <Progress value={60} className="h-2 bg-gray-700" />
+                </div>
               </CardContent>
             </Card>
           </div>
-          <div className="md:col-span-2 space-y-4">
-            <Card>
+
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader>
+              <CardTitle>Frustrations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside text-gray-400 space-y-2">
+                <li>Too much time spent booking - she's busy!</li>
+                <li>Too many websites visited per trip</li>
+                <li>Not terribly tech-savvy - doesn't like the process</li>
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center"><FileText className="mr-2" />Habit Stats</CardTitle>
+                <CardTitle className="text-white">Favourite Brands</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-4">
-                <div className="flex items-center space-x-2">
-                  <UserPlus className="mr-2" />
-                  <div>
-                    <p className="font-semibold">Enrolled</p>
-                    <p>{habitsEnrolled}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UserCheck className="mr-2" />
-                  <div>
-                    <p className="font-semibold">Completed (Today)</p>
-                    <p>{habitsCompletedToday}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UserCheck className="mr-2" />
-                  <div>
-                    <p className="font-semibold">Completed (All Time)</p>
-                    <p>{habitsCompletedOverall}</p>
-                  </div>
-                </div>
+              <CardContent className="flex items-center justify-around flex-wrap gap-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/20/Adidas_Logo.svg" alt="Adidas" className="h-8 filter invert"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" alt="Nike" className="h-8 filter invert"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix" className="h-8"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/69/Airbnb_Logo_B%C3%A9lo.svg" alt="Airbnb" className="h-8 filter invert"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Zara_Logo.svg" alt="Zara" className="h-8 filter invert"/>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gray-800 border-gray-700 text-white">
               <CardHeader>
-                <CardTitle>Overall Report (Stats)</CardTitle>
+                <CardTitle>Goals</CardTitle>
               </CardHeader>
               <CardContent>
-                {loading ? <p>Loading stats...</p> : <CharacterStatsChart data={characterStats} />}
+                <ul className="list-disc list-inside text-gray-400 space-y-2">
+                  <li>Find a simple, all-in-one travel booking solution.</li>
+                  <li>Reduce time spent on travel planning.</li>
+                  <li>Have a seamless and organized travel experience.</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Overall Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress value={75} />
-          <p className="text-sm text-muted-foreground mt-2">You are 75% of the way to your next goal!</p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Profile;
+export default ProfilePage;

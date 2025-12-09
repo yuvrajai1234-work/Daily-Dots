@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Progress } from "@/components/ui/progress";
 
 const HabitDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -109,6 +110,7 @@ const HabitDetail = () => {
   const today = new Date();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const maxScore = daysInMonth * 4;
+  const percentage = maxScore > 0 ? Math.round((monthlyScore / maxScore) * 100) : 0;
 
   return (
     <Card>
@@ -122,6 +124,8 @@ const HabitDetail = () => {
         <div>
           <h3 className="text-lg font-medium">Monthly Score</h3>
           <p className="text-2xl font-bold">{monthlyScore} / {maxScore}</p>
+          <Progress value={percentage} className="mt-2" />
+          <p className="text-sm text-muted-foreground mt-2">You are at {percentage}% of your monthly goal!</p>
         </div>
         <div>
             <h3 className="text-lg font-medium">Monthly Progress</h3>

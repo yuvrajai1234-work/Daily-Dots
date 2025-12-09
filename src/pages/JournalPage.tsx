@@ -44,6 +44,7 @@ const JournalPage = () => {
   const [lastEntryDate, setLastEntryDate] = useStickyState(null, "journal:lastEntryDate");
 
   const [entries, setEntries] = useState([]);
+  const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [browsingDate, setBrowsingDate] = useState(new Date());
@@ -73,14 +74,14 @@ const JournalPage = () => {
       return;
     }
 
-    const fetchEntries = async () => {
+    const fetchEntriesAndHabits = async () => {
       setLoading(true);
       setError(null);
       try {
         const from = startOfDay(browsingDate).toISOString();
         const to = endOfDay(browsingDate).toISOString();
 
-        let { data, error: fetchError } = await supabase
+        const { data: entriesData, error: fetchError } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("user_id", session.user.id)
@@ -89,23 +90,41 @@ const JournalPage = () => {
           .order("created_at", { ascending: false });
 
         if (fetchError) throw fetchError;
-        setEntries(data || []);
+        setEntries(entriesData || []);
+
+        const dateStr = format(browsingDate, 'yyyy-MM-dd');
+        const { data: habitsData, error: habitsError } = await supabase
+          .from('habits')
+          .select('*, habit_completions(completion_date)')
+          .eq('user_id', session.user.id);
+        
+        if (habitsError) throw habitsError;
+
+        const processedHabits = habitsData.map(habit => {
+            const completedToday = habit.habit_completions.some(
+                comp => format(new Date(comp.completion_date), 'yyyy-MM-dd') === dateStr
+            );
+            return { ...habit, completed: completedToday };
+        });
+
+        setHabits(processedHabits || []);
+
       } catch (err) {
-        console.error("Error fetching journal entries:", err.message);
-        setError("Permission denied. Make sure RLS policies are enabled for 'journal_entries'.");
+        console.error("Error fetching journal data:", err.message);
+        setError("Permission denied. Make sure RLS policies are enabled for 'journal_entries' and 'habits'.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEntries();
+    fetchEntriesAndHabits();
 
     const channel = supabase
       .channel(`journal-entries-changes:${session.user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'journal_entries', filter: `user_id=eq.${session.user.id}` },
-        () => fetchEntries()
+        () => fetchEntriesAndHabits()
       )
       .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR') {
@@ -301,7 +320,8 @@ const JournalPage = () => {
           </Alert>
         ) : (
           <EntryViewer 
-            entries={entries} 
+            entries={entries}
+            habits={habits}
             browsingDate={browsingDate} 
             setBrowsingDate={setBrowsingDate} 
             handleDeleteJournal={handleDeleteJournal} 

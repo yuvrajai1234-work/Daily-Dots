@@ -2,10 +2,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 import { format, subDays, addDays } from "date-fns";
 
-export const EntryViewer = ({ entries, browsingDate, setBrowsingDate, handleDeleteJournal }) => {
+export const EntryViewer = ({ entries, habits, browsingDate, setBrowsingDate, handleDeleteJournal }) => {
   return (
     <div className="relative w-full max-w-4xl mx-auto">
       <div className="overflow-hidden relative">
@@ -35,23 +35,41 @@ export const EntryViewer = ({ entries, browsingDate, setBrowsingDate, handleDele
                         </AlertDialog>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold mb-2">Daily Reflection</h3>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{entry.daily_reflection}</p>
+                    <CardContent className="grid md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2 space-y-4">
+                        <div>
+                          <h3 className="font-semibold mb-2">Daily Reflection</h3>
+                          <p className="whitespace-pre-wrap text-muted-foreground">{entry.daily_reflection}</p>
+                        </div>
+                        {entry.mistakes_reflection && (
+                          <div>
+                            <h3 className="font-semibold mb-2">Mistakes and Reflection</h3>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{entry.mistakes_reflection}</p>
+                          </div>
+                        )}
+                        {entry.success_steps && (
+                          <div>
+                            <h3 className="font-semibold mb-2">Steps Towards Success</h3>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{entry.success_steps}</p>
+                          </div>
+                        )}
                       </div>
-                      {entry.mistakes_reflection && (
-                        <div>
-                          <h3 className="font-semibold mb-2">Mistakes and Reflection</h3>
-                          <p className="whitespace-pre-wrap text-muted-foreground">{entry.mistakes_reflection}</p>
+                      <div className="md:col-span-1">
+                        <h3 className="font-semibold mb-4">Habits on this day</h3>
+                        <div className="space-y-3">
+                          {habits && habits.length > 0 ? (
+                            habits.map(habit => (
+                              <div key={habit.id} className="flex items-center gap-3">
+                                {habit.completed ? <Check className="h-5 w-5 text-green-500" /> : <X className="h-5 w-5 text-red-500" />}
+                                <span className="text-2xl">{habit.icon}</span>
+                                <span className="text-sm font-medium">{habit.name}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No habits tracked for this day.</p>
+                          )}
                         </div>
-                      )}
-                      {entry.success_steps && (
-                        <div>
-                          <h3 className="font-semibold mb-2">Steps Towards Success</h3>
-                          <p className="whitespace-pre-wrap text-muted-foreground">{entry.success_steps}</p>
-                        </div>
-                      )}
+                      </div>
                     </CardContent>
                   </Card>
                 </div>

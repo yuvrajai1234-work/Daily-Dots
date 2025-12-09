@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,33 +27,23 @@ export const SignUp = () => {
     setLoading(true);
     setError(null);
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          display_name: username,
+        },
+      },
     });
 
-    if (signUpError) {
-      setLoading(false);
-      setError(signUpError.message);
-      return;
-    }
+    setLoading(false);
 
-    if (signUpData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({ id: signUpData.user.id, username: username });
-        
-        if (profileError) {
-            setLoading(false);
-            setError(profileError.message);
-            // Optionally, you might want to handle user deletion here if profile creation fails
-        } else {
-            setLoading(false);
-            navigate("/dashboard");
-        }
+    if (error) {
+      setError(error.message);
     } else {
-        setLoading(false);
-        setError("Sign up successful, but no user data returned.");
+      alert("Sign up successful! Please check your email to confirm your account.");
+      navigate("/sign-in");
     }
   };
 

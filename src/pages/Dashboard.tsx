@@ -59,7 +59,6 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
 const Dashboard = () => {
   const { session } = useAuth();
   const [habits, setHabits] = useState([]);
-  const [username, setUsername] = useState('');
   const [greeting, setGreeting] = useState('');
   const [stats, setStats] = useState({
     todayScore: 0,
@@ -141,38 +140,35 @@ const Dashboard = () => {
     setChartData(newChartData);
   }, []);
 
-  const fetchUsername = useCallback(async () => {
-    if (!session) return;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', session.user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching username:", error);
-        return;
-    }
-    setUsername(data?.username || session.user.email.split('@')[0]);
-  }, [session]);
-
   useEffect(() => {
-      if (username) {
-          const hour = new Date().getHours();
-          if (hour < 12) {
-              setGreeting(`Good Morning, ${username}!`);
-          } else if (hour < 18) {
-              setGreeting(`Good Afternoon, ${username}!`);
-          } else {
-              setGreeting(`Good Evening, ${username}!`);
-          }
+    const updateGreeting = () => {
+      const user = session?.user;
+      const displayName = user.user_metadata?.display_name || user?.email?.split('@')[0];
+
+      if (displayName) {
+        const hour = new Date().getHours();
+        if (hour >= 4 && hour < 12) {
+          setGreeting(`Good Morning, ${displayName}!`);
+        } else if (hour >= 12 && hour < 18) {
+          setGreeting(`Good Afternoon, ${displayName}!`);
+        } else {
+          setGreeting(`Good Evening, ${displayName}!`);
+        }
+      } else {
+        setGreeting('Welcome to your Dashboard!');
       }
-  }, [username]);
+    };
+
+    if (session) {
+      updateGreeting();
+    }
+    const intervalId = setInterval(updateGreeting, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [session]);
 
   const fetchData = useCallback(async () => {
     if (!session) return;
-    
-    fetchUsername();
 
     const { data: completions, error } = await supabase
       .from('habit_completions')
@@ -183,9 +179,9 @@ const Dashboard = () => {
       console.error('Error fetching habit completions:', error);
       return;
     }
-    
+
     processData(completions);
-    
+
     const today = new Date().toISOString().split('T')[0];
     const { data: habits, error: habitsError } = await supabase
       .from('habits')
@@ -203,7 +199,7 @@ const Dashboard = () => {
       }));
       setHabits(habitsWithCompletionStatus);
     }
-  }, [session, processData, fetchUsername]);
+  }, [session, processData]);
 
   useEffect(() => {
     if (session) {
@@ -278,7 +274,7 @@ const Dashboard = () => {
       console.error("Error saving reflection:", error.message);
     }
   };
-  
+
   const quickStats = [
     { title: "Today's Score", value: stats.todayScore, icon: Calendar, color: "text-blue-500" },
     { title: "Current Streak", value: `${stats.currentStreak} Days`, icon: Flame, color: "text-orange-500" },
