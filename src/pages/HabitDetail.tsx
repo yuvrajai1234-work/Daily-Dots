@@ -24,6 +24,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Progress } from "@/components/ui/progress";
+import { TrendingUp, ChevronsUpDown } from "lucide-react";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+  } from "@/components/ui/collapsible";
 
 const HabitDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +38,9 @@ const HabitDetail = () => {
   const [loading, setLoading] = useState(true);
   const [monthlyScore, setMonthlyScore] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [improvement, setImprovement] = useState(0);
+  const [weeklyPercentage, setWeeklyPercentage] = useState(0);
+  const [avgWeeklyLevel, setAvgWeeklyLevel] = useState(0);
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -56,6 +65,11 @@ const HabitDetail = () => {
         if (completionsError) throw completionsError;
 
         const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const todayDate = today.getDate();
+        const yesterdayDate = yesterday.getDate();
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
 
@@ -70,12 +84,61 @@ const HabitDetail = () => {
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
         const newChartData = Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
+            const date = new Date(currentYear, currentMonth, day);
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const completion = monthlyCompletions.find(c => c.completion_date === dateStr);
-            return { day: day, score: completion ? completion.effort_level : 0 };
+
+            let dayLabel;
+            if (day === todayDate) {
+                dayLabel = "Today";
+            } else if (day === yesterdayDate) {
+                dayLabel = "Yesterday";
+            } else {
+                dayLabel = date.toLocaleDateString('en-US', { day: 'numeric' });
+            }
+
+            return { day: dayLabel, score: completion ? completion.effort_level : 0 };
         });
 
         setChartData(newChartData);
+
+        // Improvement and weekly stats calculation
+        const todayDateObj = new Date();
+        const dayOfWeek = todayDateObj.getDay();
+        const startOfWeek = new Date(todayDateObj);
+        startOfWeek.setDate(todayDateObj.getDate() - dayOfWeek);
+
+        const datesOfWeek = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            return date.toISOString().slice(0, 10);
+        });
+        const currentWeekCompletions = completions.filter(c => datesOfWeek.includes(c.completion_date));
+        const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const startOfLastWeek = new Date(startOfWeek);
+        startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+        const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(startOfLastWeek);
+            date.setDate(startOfLastWeek.getDate() + i);
+            return date.toISOString().slice(0, 10);
+        });
+        const lastWeekCompletions = completions.filter(c => datesOfLastWeek.includes(c.completion_date));
+        const lastWeekScore = lastWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const T = 7;
+        const M_per_habit = 4 * T;
+
+        const overallCompletionRate = M_per_habit > 0 ? (cycleScore / M_per_habit) * 100 : 0;
+        const overallCompletionRate_prev_week = M_per_habit > 0 ? (lastWeekScore / M_per_habit) * 100 : 0;
+
+        const improvementValue = Math.round(overallCompletionRate - overallCompletionRate_prev_week);
+        setImprovement(improvementValue);
+
+        const weeklyAvg = cycleScore / 7;
+        const weeklyPerc = (cycleScore / (4 * 7)) * 100;
+        setAvgWeeklyLevel(weeklyAvg);
+        setWeeklyPercentage(weeklyPerc);
 
       } catch (error: any) {
         console.error("Error fetching habit details:", error.message);
@@ -114,12 +177,16 @@ const HabitDetail = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{habit.name}</CardTitle>
-        <CardDescription>
-          Created on: {new Date(habit.created_at).toLocaleDateString('en-GB')}
-        </CardDescription>
-      </CardHeader>
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle>{habit.name}</CardTitle>
+                    <CardDescription>
+                    Created on: {new Date(habit.created_at).toLocaleDateString('en-GB')}
+                    </CardDescription>
+                </div>
+            </div>
+        </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-lg font-medium">Monthly Score</h3>
@@ -127,6 +194,35 @@ const HabitDetail = () => {
           <Progress value={percentage} className="mt-2" />
           <p className="text-sm text-muted-foreground mt-2">You are at {percentage}% of your monthly goal!</p>
         </div>
+
+        <Collapsible>
+            <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between cursor-pointer py-2 border-y">
+                    <h3 className="text-lg font-medium">Habit Weekly Stats</h3>
+                    <div className="flex items-center">
+                        <div className={`text-sm font-bold flex items-center mr-2 ${improvement > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            <TrendingUp className="w-4 h-4 mr-1" />
+                            {improvement > 0 ? '+' : ''}{improvement}%
+                        </div>
+                        <ChevronsUpDown className="h-4 w-4" />
+                    </div>
+                </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                        <span style={{ color: habit.color, fontSize: '1rem' }} className="mr-2">●</span>
+                        <span className="font-medium">{habit.name}</span>
+                    </div>
+                    <div className="text-right">
+                        <div className="font-bold">{weeklyPercentage.toFixed(0)}% this week</div>
+                        <div className="text-sm text-muted-foreground">Avg level: {avgWeeklyLevel.toFixed(1)} / 4</div>
+                    </div>
+                </div>
+                <Progress value={weeklyPercentage} className="w-full mt-2" />
+            </CollapsibleContent>
+        </Collapsible>
+
         <div>
             <h3 className="text-lg font-medium">Monthly Progress</h3>
             <div className="h-64 mt-4">

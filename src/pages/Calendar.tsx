@@ -52,7 +52,11 @@ const CalendarPage = () => {
 
   const getDayStyle = (date) => {
     const dayCompletions = completions.filter(
-      (c) => format(startOfDay(new Date(c.completion_date)), 'yyyy-MM-dd') === format(startOfDay(date), 'yyyy-MM-dd')
+      (c) => {
+        const [year, month, day] = c.completion_date.split('-').map(Number);
+        const completionDate = new Date(year, month - 1, day);
+        return format(startOfDay(completionDate), 'yyyy-MM-dd') === format(startOfDay(date), 'yyyy-MM-dd');
+      }
     );
 
     if (dayCompletions.length === 0) return {};
@@ -73,7 +77,11 @@ const CalendarPage = () => {
   };
 
   const dayCompletions = completions.filter(
-    (c) => format(startOfDay(new Date(c.completion_date)), 'yyyy-MM-dd') === format(startOfDay(selectedDate), 'yyyy-MM-dd')
+    (c) => {
+      const [year, month, day] = c.completion_date.split('-').map(Number);
+      const completionDate = new Date(year, month - 1, day);
+      return format(startOfDay(completionDate), 'yyyy-MM-dd') === format(startOfDay(selectedDate), 'yyyy-MM-dd');
+    }
   );
 
   return (

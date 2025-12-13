@@ -44,7 +44,24 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
       </div>
     </CardHeader>
     <CardContent>
-      <p className="text-sm text-zinc-200 mb-2">Log your effort:</p>
+      <div className="h-24 mb-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={habit.history}>
+            <Tooltip
+              contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', color: '#fff' }}
+              labelStyle={{ color: '#888' }}
+            />
+            <Line type="monotone" dataKey="score" stroke="#fff" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex justify-between items-center mb-2">
+        <p className="text-sm text-zinc-200">Log your effort:</p>
+        <div className="text-sm font-bold flex items-center">
+            <TrendingUp className="w-4 h-4 mr-1" />
+            {habit.improvement > 0 ? '+' : ''}{habit.improvement}%
+        </div>
+      </div>
       <div className="flex justify-around">
         {[1, 2, 3, 4].map(level => (
           <Button key={level} variant="outline" size="sm" className={`w-10 h-10 rounded-full bg-transparent border-white hover:bg-white/10 text-white ${habit.effortLevel === level ? 'bg-black/30' : ''}`} onClick={() => onLogEffort(habit, level)}>
@@ -72,7 +89,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [selectedColor, setSelectedColor] = useState('#8884d8');
 
-  const processData = useCallback((completions) => {
+  const processData = useCallback((completions, habits) => {
     const today = new Date().toISOString().slice(0, 10);
     const todayCompletions = completions.filter(c => c.completion_date === today);
     const todayScore = todayCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
@@ -113,12 +130,15 @@ const Dashboard = () => {
     const lastWeekCompletions = completions.filter(c => datesOfLastWeek.includes(c.completion_date));
     const lastWeekScore = lastWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
-    let improvement = 0;
-    if (lastWeekScore > 0) {
-      improvement = ((cycleScore - lastWeekScore) / lastWeekScore) * 100;
-    } else if (cycleScore > 0) {
-      improvement = 100;
-    }
+    const T = 7;
+    const M_per_habit = 4 * T;
+    const totalM_current_week = M_per_habit * habits.length;
+    const totalM_prev_week = M_per_habit * habits.length;
+
+    const overallCompletionRate = totalM_current_week > 0 ? (cycleScore / totalM_current_week) * 100 : 0;
+    const overallCompletionRate_prev_week = totalM_prev_week > 0 ? (lastWeekScore / totalM_prev_week) * 100 : 0;
+
+    const improvement = overallCompletionRate - overallCompletionRate_prev_week;
 
     setStats({
       todayScore: todayScore,
@@ -143,7 +163,7 @@ const Dashboard = () => {
   useEffect(() => {
     const updateGreeting = () => {
       const user = session?.user;
-      const displayName = user.user_metadata?.display_name || user?.email?.split('@')[0];
+      const displayName = user.user_metadata?.full_name || user?.email?.split('@')[0];
 
       if (displayName) {
         const hour = new Date().getHours();
@@ -172,15 +192,13 @@ const Dashboard = () => {
 
     const { data: completions, error } = await supabase
       .from('habit_completions')
-      .select('completion_date, effort_level')
+      .select('completion_date, effort_level, habit_id')
       .eq('user_id', session.user.id);
 
     if (error) {
       console.error('Error fetching habit completions:', error);
       return;
     }
-
-    processData(completions);
 
     const today = new Date().toISOString().split('T')[0];
     const { data: habits, error: habitsError } = await supabase
@@ -192,12 +210,60 @@ const Dashboard = () => {
     if (habitsError) {
       console.error('Error fetching habits:', habitsError);
     } else {
-      const habitsWithCompletionStatus = habits.map(habit => ({
-        ...habit,
-        completed: habit.habit_completions.length > 0,
-        effortLevel: habit.habit_completions.length > 0 ? habit.habit_completions[0].effort_level : 0,
-      }));
+        const habitsWithCompletionStatus = habits.map(habit => {
+        const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+
+        // Improvement calculation
+        const todayDate = new Date();
+        const dayOfWeek = todayDate.getDay();
+        const startOfWeek = new Date(todayDate);
+        startOfWeek.setDate(todayDate.getDate() - dayOfWeek);
+
+        const datesOfWeek = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            return date.toISOString().slice(0, 10);
+        });
+        const currentWeekCompletions = habitCompletions.filter(c => datesOfWeek.includes(c.completion_date));
+        const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const startOfLastWeek = new Date(startOfWeek);
+        startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+        const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(startOfLastWeek);
+            date.setDate(startOfLastWeek.getDate() + i);
+            return date.toISOString().slice(0, 10);
+        });
+        const lastWeekCompletions = habitCompletions.filter(c => datesOfLastWeek.includes(c.completion_date));
+        const lastWeekScore = lastWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const T = 7;
+        const M_per_habit = 4 * T;
+
+        const overallCompletionRate = M_per_habit > 0 ? (cycleScore / M_per_habit) * 100 : 0;
+        const overallCompletionRate_prev_week = M_per_habit > 0 ? (lastWeekScore / M_per_habit) * 100 : 0;
+
+        const improvement = Math.round(overallCompletionRate - overallCompletionRate_prev_week);
+
+
+        const history = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            const dayStr = date.toISOString().slice(0, 10);
+            const completion = habitCompletions.find(c => c.completion_date === dayStr);
+            return { day: i, score: completion ? completion.effort_level : 0 };
+        });
+
+        return {
+            ...habit,
+            completed: habit.habit_completions.length > 0,
+            effortLevel: habit.habit_completions.length > 0 ? habit.habit_completions[0].effort_level : 0,
+            history,
+            improvement, // new prop
+        };
+        });
       setHabits(habitsWithCompletionStatus);
+      processData(completions, habitsWithCompletionStatus);
     }
   }, [session, processData]);
 
@@ -279,24 +345,36 @@ const Dashboard = () => {
     { title: "Today's Score", value: stats.todayScore, icon: Calendar, color: "text-blue-500" },
     { title: "Current Streak", value: `${stats.currentStreak} Days`, icon: Flame, color: "text-orange-500" },
     { title: "Cycle Score", value: stats.cycleScore, icon: Trophy, color: "text-yellow-500" },
-    { title: "Improvement", value: `${stats.improvement >= 0 ? '+' : ''}${stats.improvement}%`, icon: TrendingUp, color: "text-green-500" },
+    { title: "Improvement", value: `${stats.improvement > 0 ? '+' : ''}${stats.improvement}%`, icon: TrendingUp, color: "text-green-500", link: "/improvement" },
   ];
 
   return (
     <div className="p-4 md:p-8 space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">{greeting}</h1>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {quickStats.map(stat => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {quickStats.map(stat => {
+          const card = (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          );
+
+          if (stat.link) {
+            return (
+              <Link to={stat.link} key={stat.title}>
+                {card}
+              </Link>
+            );
+          }
+
+          return <div key={stat.title}>{card}</div>;
+        })}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

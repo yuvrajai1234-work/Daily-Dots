@@ -205,7 +205,7 @@ const JournalPage = () => {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <Card className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg">
-        <CardHeader><CardTitle>AI Motivation</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Motivation</CardTitle></CardHeader>
         <CardContent><p className="text-lg italic">"{motivation}"</p></CardContent>
       </Card>
 
