@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import Personality from "@/components/Personality";
 import HabitStats from "@/components/HabitStats";
+import LifeBalanceSpiderWeb from "@/components/LifeBalanceSpiderWeb";
 
 const allHabits = [
   "Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism",
@@ -356,6 +357,7 @@ const ProfilePage = () => {
               </div>
             </CardContent>
           </Card>
+          <LifeBalanceSpiderWeb />
         </div>
 
         {/* Right Column */}

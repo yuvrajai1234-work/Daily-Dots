@@ -65,11 +65,6 @@ const HabitDetail = () => {
         if (completionsError) throw completionsError;
 
         const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const todayDate = today.getDate();
-        const yesterdayDate = yesterday.getDate();
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
 
@@ -84,29 +79,18 @@ const HabitDetail = () => {
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
         const newChartData = Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
-            const date = new Date(currentYear, currentMonth, day);
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const completion = monthlyCompletions.find(c => c.completion_date === dateStr);
-
-            let dayLabel;
-            if (day === todayDate) {
-                dayLabel = "Today";
-            } else if (day === yesterdayDate) {
-                dayLabel = "Yesterday";
-            } else {
-                dayLabel = date.toLocaleDateString('en-US', { day: 'numeric' });
-            }
-
-            return { day: dayLabel, score: completion ? completion.effort_level : 0 };
+            return { day: day, score: completion ? completion.effort_level : 0 };
         });
 
         setChartData(newChartData);
 
         // Improvement and weekly stats calculation
-        const todayDateObj = new Date();
-        const dayOfWeek = todayDateObj.getDay();
-        const startOfWeek = new Date(todayDateObj);
-        startOfWeek.setDate(todayDateObj.getDate() - dayOfWeek);
+        const todayDate = new Date();
+        const dayOfWeek = todayDate.getDay();
+        const startOfWeek = new Date(todayDate);
+        startOfWeek.setDate(todayDate.getDate() - dayOfWeek);
 
         const datesOfWeek = Array.from({ length: 7 }, (_, i) => {
             const date = new Date(startOfWeek);
@@ -175,6 +159,21 @@ const HabitDetail = () => {
   const maxScore = daysInMonth * 4;
   const percentage = maxScore > 0 ? Math.round((monthlyScore / maxScore) * 100) : 0;
 
+  const formatTooltipLabel = (label: number) => {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    
+    if (label === today.getDate()) {
+      return 'Today';
+    }
+    if (label === yesterday.getDate()) {
+      return 'Yesterday';
+    }
+
+    return `Day ${label}`;
+  };
+
   return (
     <Card>
         <CardHeader>
@@ -231,7 +230,7 @@ const HabitDetail = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
                     <YAxis domain={[0, 4]} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={formatTooltipLabel} />
                     <Line type="monotone" dataKey="score" stroke={habit.color || '#8884d8'} strokeWidth={2} activeDot={{ r: 8 }} />
                 </LineChart>
                 </ResponsiveContainer>
