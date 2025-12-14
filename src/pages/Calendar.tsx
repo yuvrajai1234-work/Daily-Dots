@@ -6,6 +6,7 @@ import { Calendar as UICalendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfDay } from "date-fns";
+import Reminders from "@/components/Reminders";
 
 const CalendarPage = () => {
   const { session } = useAuth();
@@ -13,6 +14,13 @@ const CalendarPage = () => {
   const [habits, setHabits] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
+
+  const effortLevelColors = {
+    1: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    2: 'bg-green-300 text-green-800 dark:bg-green-700 dark:text-green-200',
+    3: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+    4: 'bg-green-700 text-white dark:bg-green-300 dark:text-black',
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,12 +71,11 @@ const CalendarPage = () => {
 
     const maxEffort = Math.max(...dayCompletions.map(c => c.effort_level));
     
-    // Level-based background colors (using a green scale for progress)
     const colors = {
-      1: 'bg-green-100 dark:bg-green-900', // Lightest green
+      1: 'bg-green-100 dark:bg-green-900',
       2: 'bg-green-300 dark:bg-green-700',
       3: 'bg-green-500 dark:bg-green-500',
-      4: 'bg-green-700 dark:bg-green-300', // Darkest green
+      4: 'bg-green-700 dark:bg-green-300',
     };
 
     return {
@@ -115,7 +122,7 @@ const CalendarPage = () => {
                 {dayCompletions.map((log, index) => (
                   <li key={index} className="flex justify-between items-center p-3 rounded-md border bg-card">
                     <span className="font-medium">{habits[log.habit_id] || 'Habit name missing'}</span>
-                    <Badge variant="secondary">Level {log.effort_level}</Badge>
+                    <Badge className={effortLevelColors[log.effort_level]}>Level {log.effort_level}</Badge>
                   </li>
                 ))}
               </ul>
@@ -134,6 +141,7 @@ const CalendarPage = () => {
           </div>
         </CardContent>
       </Card>
+      <Reminders selectedDate={selectedDate} />
     </div>
   );
 };
