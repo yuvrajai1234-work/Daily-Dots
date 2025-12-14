@@ -12,6 +12,7 @@ const CalendarPage = () => {
   const { session } = useAuth();
   const [completions, setCompletions] = useState([]);
   const [habits, setHabits] = useState({});
+  const [specialEvents, setSpecialEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
@@ -22,15 +23,31 @@ const CalendarPage = () => {
     4: 'bg-green-700 text-white dark:bg-green-300 dark:text-black',
   };
 
+  const fetchSpecialEvents = async () => {
+    if (!session) return;
+    const { data: remindersData, error: remindersError } = await supabase
+      .from("reminders")
+      .select("id, reminder_time, reminder_message, is_special_event")
+      .eq("user_id", session.user.id)
+      .eq("is_special_event", true)
+      .order("reminder_time");
+
+    if (remindersError) {
+      console.error("Error fetching special event reminders:", remindersError);
+    } else {
+      setSpecialEvents(remindersData);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!session) return;
       setLoading(true);
 
-      // Fetch habits
       const { data: habitsData, error: habitsError } = await supabase
         .from("habits")
         .select("id, name");
+
       if (habitsError) {
         console.error("Error fetching habits:", habitsError);
       } else {
@@ -41,7 +58,6 @@ const CalendarPage = () => {
         setHabits(habitsMap);
       }
 
-      // Fetch completions
       const { data: completionsData, error: completionsError } = await supabase
         .from("habit_completions")
         .select("completion_date, effort_level, habit_id")
@@ -52,6 +68,9 @@ const CalendarPage = () => {
       } else {
         setCompletions(completionsData);
       }
+
+      await fetchSpecialEvents();
+
       setLoading(false);
     };
 
@@ -59,6 +78,11 @@ const CalendarPage = () => {
   }, [session]);
 
   const getDayStyle = (date) => {
+    const isSpecialDay = specialEvents.some(r => format(startOfDay(new Date(r.reminder_time)), 'yyyy-MM-dd') === format(startOfDay(date), 'yyyy-MM-dd'));
+    if (isSpecialDay) {
+      return { className: 'bg-red-500 text-white rounded-md' };
+    }
+
     const dayCompletions = completions.filter(
       (c) => {
         const [year, month, day] = c.completion_date.split('-').map(Number);
@@ -129,7 +153,8 @@ const CalendarPage = () => {
             ) : (
               <p className="text-muted-foreground mt-4 text-center">No habits logged for this day.</p>
             )}
-            <div className="mt-6">
+            <div className="mt-6 space-y-4">
+              <div>
                 <p className="font-semibold mb-2">Legend:</p>
                 <div className="flex flex-wrap gap-2 items-center">
                     <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-900 border"></div><span>Level 1</span></div>
@@ -137,11 +162,28 @@ const CalendarPage = () => {
                     <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-green-500 dark:bg-green-500 border"></div><span>Level 3</span></div>
                     <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-green-700 dark:bg-green-300 border"></div><span>Level 4</span></div>
                 </div>
+              </div>
+              <div>
+                <div className="flex flex-wrap gap-2 items-center mb-2">
+                    <div className="flex items-center gap-2"><div> <span class="w-4 h-4 inline-block text-red-500">🚨</span> </div><span>Special Events</span></div>
+                </div>
+                {specialEvents.length > 0 ? (
+                  <ul className="space-y-1 list-disc pl-5">
+                    {specialEvents.map((event) => (
+                      <li key={event.id} className="text-sm text-muted-foreground">
+                        <span className="font-semibold text-primary">{format(new Date(event.reminder_time), "MMM dd")}:</span> {event.reminder_message}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No special events marked.</p>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
-      <Reminders selectedDate={selectedDate} />
+      <Reminders selectedDate={selectedDate} onSpecialEventAdded={fetchSpecialEvents} />
     </div>
   );
 };

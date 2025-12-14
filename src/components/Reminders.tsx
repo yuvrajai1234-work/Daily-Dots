@@ -5,58 +5,47 @@ import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfDay, endOfDay, isBefore, startOfToday } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { Trash2 } from "lucide-react";
 
-const Reminders = ({ selectedDate }) => {
+const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
   const { session } = useAuth();
   const [reminders, setReminders] = useState([]);
   const [newReminderMessage, setNewReminderMessage] = useState("");
   const [newReminderTime, setNewReminderTime] = useState("12:00");
+  const [isSpecialEvent, setIsSpecialEvent] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const isPastDate = isBefore(selectedDate, startOfToday());
 
   useEffect(() => {
-    const maintenanceAndFetchReminders = async () => {
+    const fetchReminders = async () => {
       if (!session) return;
 
-      // Auto-delete reminders older than a week
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const { error: deleteError } = await supabase
-        .from("reminders")
-        .delete()
-        .lt("reminder_time", oneWeekAgo.toISOString())
-        .eq("user_id", session.user.id);
-
-      if (deleteError) {
-        console.error("Error deleting old reminders:", deleteError);
-      }
-
-      // Fetch reminders for the selected date
       const from = startOfDay(selectedDate).toISOString();
       const to = endOfDay(selectedDate).toISOString();
 
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from("reminders")
-        .select("id, reminder_message, reminder_time")
+        .select("id, reminder_message, reminder_time, is_special_event")
         .eq("user_id", session.user.id)
         .gte("reminder_time", from)
         .lte("reminder_time", to)
         .order("reminder_time");
 
-      if (fetchError) {
-        console.error("Error fetching reminders:", fetchError);
+      if (error) {
+        console.error("Error fetching reminders:", error);
       } else if (data) {
         setReminders(data);
       }
     };
 
-    maintenanceAndFetchReminders();
+    fetchReminders();
   }, [session, selectedDate]);
 
   const handleAddReminder = async () => {
@@ -76,6 +65,7 @@ const Reminders = ({ selectedDate }) => {
           user_id: session.user.id,
           reminder_message: newReminderMessage,
           reminder_time: reminderDateTime.toISOString(),
+          is_special_event: isSpecialEvent,
         },
       ])
       .select();
@@ -84,8 +74,12 @@ const Reminders = ({ selectedDate }) => {
       console.error("Error adding reminder:", error);
     } else if (data) {
       setReminders([...reminders, data[0]]);
+      if (isSpecialEvent) {
+        onSpecialEventAdded();
+      }
       setNewReminderMessage("");
       setNewReminderTime("12:00");
+      setIsSpecialEvent(false);
       setIsDialogOpen(false);
     }
   };
@@ -98,6 +92,7 @@ const Reminders = ({ selectedDate }) => {
       console.error("Error deleting reminder:", error);
     } else {
       setReminders(reminders.filter((r) => r.id !== reminderId));
+      onSpecialEventAdded();
     }
   };
 
@@ -123,6 +118,10 @@ const Reminders = ({ selectedDate }) => {
                 placeholder="What do you want to be reminded of?"
               />
               <TimePicker value={newReminderTime} onChange={setNewReminderTime} />
+              <div className="flex items-center space-x-2">
+                <Checkbox id="special-event" checked={isSpecialEvent} onCheckedChange={setIsSpecialEvent} />
+                <Label htmlFor="special-event">Mark as special event</Label>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
