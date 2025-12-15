@@ -20,6 +20,7 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
   const [newReminderTime, setNewReminderTime] = useState("12:00");
   const [isSpecialEvent, setIsSpecialEvent] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTimeValid, setIsTimeValid] = useState(true);
 
   const isPastDate = isBefore(selectedDate, startOfToday());
 
@@ -47,6 +48,14 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
 
     fetchReminders();
   }, [session, selectedDate]);
+
+  useEffect(() => {
+    const [hours, minutes] = newReminderTime.split(':');
+    const reminderDateTime = new Date(selectedDate);
+    reminderDateTime.setHours(parseInt(hours, 10));
+    reminderDateTime.setMinutes(parseInt(minutes, 10));
+    setIsTimeValid(isBefore(new Date(), reminderDateTime));
+}, [newReminderTime, selectedDate]);
 
   const handleAddReminder = async () => {
     if (!session || !newReminderMessage.trim()) return;
@@ -125,7 +134,7 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddReminder}>Save Reminder</Button>
+              <Button onClick={handleAddReminder} disabled={!isTimeValid}>Save Reminder</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -150,6 +150,7 @@ const JournalPage = () => {
             mistakes_reflection: mistakesReflection,
             success_steps: successSteps,
             mood: mood,
+            todos: todos,
         };
         const { error: insertError } = await supabase.from('journal_entries').insert(entryPayload);
         if (insertError) throw insertError;
