@@ -49,15 +49,13 @@ const habits = [
 
 const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
   const { session } = useAuth();
-  const [name, setName] = useState("");
+  const [habitName, setHabitName] = useState("");
   const [icon, setIcon] = useState("");
   const [color, setColor] = useState("#e5e7eb");
   const [isOpen, setIsOpen] = useState(false);
-  const [customHabit, setCustomHabit] = useState("");
 
   const handleAddHabit = async () => {
     if (!session) return;
-    const habitName = customHabit || name;
     if (!habitName) return;
 
     try {
@@ -73,8 +71,7 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
       if (data) {
         onHabitAdded();
         setIsOpen(false);
-        setName("");
-        setCustomHabit("");
+        setHabitName("");
         setIcon("");
         setColor("#e5e7eb");
       }
@@ -97,7 +94,7 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Select onValueChange={setName} value={name}>
+          <Select onValueChange={setHabitName} value={habitName}>
             <SelectTrigger>
               <SelectValue placeholder="Select a habit" />
             </SelectTrigger>
@@ -111,8 +108,8 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
           </Select>
           <Input
             placeholder="Or type a custom habit"
-            value={customHabit || name}
-            onChange={(e) => setCustomHabit(e.target.value)}
+            value={habitName}
+            onChange={(e) => setHabitName(e.target.value)}
           />
           <Input
             placeholder="Icon (e.g., 💪)"

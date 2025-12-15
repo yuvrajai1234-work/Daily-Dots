@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Flame, Trophy, TrendingUp, MoreHorizontal } from 'lucide-react';
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -47,6 +47,7 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
       <div className="h-24 mb-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={habit.history}>
+            <XAxis dataKey="day" stroke="#fff" fontSize={12} tickLine={false} axisLine={false} interval={0} />
             <Tooltip
               contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', color: '#fff' }}
               labelStyle={{ color: '#888' }}
@@ -163,7 +164,7 @@ const Dashboard = () => {
   useEffect(() => {
     const updateGreeting = () => {
       const user = session?.user;
-      const displayName = user.user_metadata?.full_name || user?.email?.split('@')[0];
+      const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0];
 
       if (displayName) {
         const hour = new Date().getHours();
@@ -245,13 +246,14 @@ const Dashboard = () => {
 
         const improvement = Math.round(overallCompletionRate - overallCompletionRate_prev_week);
 
-
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const history = Array.from({ length: 7 }, (_, i) => {
             const date = new Date();
             date.setDate(date.getDate() - (6 - i));
             const dayStr = date.toISOString().slice(0, 10);
+            const dayName = days[date.getDay()];
             const completion = habitCompletions.find(c => c.completion_date === dayStr);
-            return { day: i, score: completion ? completion.effort_level : 0 };
+            return { day: dayName, score: completion ? completion.effort_level : 0 };
         });
 
         return {
@@ -425,13 +427,19 @@ const Dashboard = () => {
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorScoreDashboard" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={selectedColor} stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor={selectedColor} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="score" stroke={selectedColor} strokeWidth={2} activeDot={{ r: 8 }} />
-              </LineChart>
+                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                <Area type="monotone" dataKey="score" stroke={selectedColor} strokeWidth={2} fillOpacity={1} fill="url(#colorScoreDashboard)" activeDot={{ r: 8 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </CardContent>

@@ -144,7 +144,7 @@ const Habits = () => {
             completion_date: today,
             effort_level: effortNum,
           },
-          { onConflict: 'habit_id, completion_date' }
+          { onConflict: "habit_id, completion_date" }
         );
 
       if (error) throw error;
@@ -176,7 +176,7 @@ const Habits = () => {
             <p>Loading habits...</p>
           ) : habits.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-lg">You haven'''t added any habits yet.</p>
+              <p className="text-lg">You haven't added any habits yet.</p>
               <p className="text-sm text-muted-foreground">Click "Add New Habit" to get started.</p>
             </div>
           ) : (
@@ -184,7 +184,7 @@ const Habits = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Habit</TableHead>
-                  <TableHead>Today'''s Effort</TableHead>
+                  <TableHead>Today's Effort</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -231,7 +231,7 @@ const Habits = () => {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                )))}
+                ))}
               </TableBody>
             </Table>
           )}

@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
-export const SignIn = () => {
+const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -101,3 +101,5 @@ export const SignIn = () => {
     </div>
   );
 };
+
+export default SignIn;
