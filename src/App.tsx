@@ -23,6 +23,7 @@ import Ebooks from "@/pages/Ebooks";
 import Settings from "@/pages/Settings";
 import About from "@/pages/About";
 import HabitDetail from "@/pages/HabitDetail";
+import ImprovementPage from "@/pages/Improvement";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
               <Route path="/habits" element={<Habits />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/improvement" element={<ImprovementPage />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/achievements" element={<Achievements />} />
               <Route path="/journal" element={<JournalPage />} />

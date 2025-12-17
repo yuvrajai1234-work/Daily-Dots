@@ -115,57 +115,69 @@ const ImprovementPage = () => {
   const overallCompletionRate_prev_week = totalM_prev_week > 0 ? (totalS_prev_week / totalM_prev_week) * 100 : 0;
 
   const improvement = overallCompletionRate - overallCompletionRate_prev_week;
+  const improvementValue = isNaN(improvement) ? 0 : improvement;
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
   }
 
   return (
     <div className="p-4 md:p-8 space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Improvement</h1>
         <Card>
             <CardContent className="flex items-center justify-center p-6">
                 <div className="text-center">
                     <div className="text-5xl font-bold flex items-center">
-                        {improvement.toFixed(0)}%
-                        {improvement > 0 && <TrendingUp className="ml-2 h-8 w-8 text-green-500" />}
-                        {improvement < 0 && <TrendingDown className="ml-2 h-8 w-8 text-red-500" />}
+                        {improvementValue.toFixed(0)}%
+                        {improvementValue > 0 && <TrendingUp className="ml-2 h-8 w-8 text-green-500" />}
+                        {improvementValue < 0 && <TrendingDown className="ml-2 h-8 w-8 text-red-500" />}
                     </div>
                     <p className="text-lg text-muted-foreground">Improvement (Last 7 days)</p>
                 </div>
             </CardContent>
         </Card>
 
-        <Card>
-        <CardHeader>
-            <div className="flex flex-row items-center justify-between">
-                <CardTitle>Habit Weekly Stats</CardTitle>
-                <div className="text-right">
-                    <span className="text-2xl font-bold">{totalHabits}</span>
-                    <p className="text-sm text-muted-foreground">Total Habits</p>
-                </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-            <div className="space-y-6">
-            {weeklyStatsByHabit.map(habit => (
-                <div key={habit.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div style={{ backgroundColor: habit.color || '#fbbf24' }} className="w-4 h-4 rounded-full mr-3"></div>
-                            <span className="font-semibold">{habit.name}</span>
-                        </div>
+        {habits.length > 0 ? (
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-row items-center justify-between">
+                        <CardTitle>Habit Weekly Stats</CardTitle>
                         <div className="text-right">
-                            <div className="font-bold">{habit.habitPercentage.toFixed(0)}% this week</div>
-                            <div className="text-sm text-muted-foreground">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
+                            <span className="text-2xl font-bold">{totalHabits}</span>
+                            <p className="text-sm text-muted-foreground">Total Habits</p>
                         </div>
                     </div>
-                    <Progress value={habit.habitPercentage} className="w-full" />
-                </div>
-            ))}
-            </div>
-        </CardContent>
-        </Card>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-6">
+                    {weeklyStatsByHabit.map(habit => (
+                        <div key={habit.id} className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <div style={{ backgroundColor: habit.color || '#fbbf24' }} className="w-4 h-4 rounded-full mr-3"></div>
+                                    <span className="font-semibold">{habit.name}</span>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-bold">{habit.habitPercentage.toFixed(0)}% this week</div>
+                                    <div className="text-sm text-muted-foreground">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
+                                </div>
+                            </div>
+                            <Progress value={habit.habitPercentage} className="w-full" />
+                        </div>
+                    ))}
+                    </div>
+                </CardContent>
+            </Card>
+        ) : (
+            <Card>
+                <CardHeader>
+                    <CardTitle>No Habits Found</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">You haven't added any habits yet. Go to the dashboard to add your first habit.</p>
+                </CardContent>
+            </Card>
+        )}
     </div>
   );
 };
