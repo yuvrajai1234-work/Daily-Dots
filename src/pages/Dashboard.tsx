@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Flame, Trophy, TrendingUp, MoreHorizontal, Archive } from 'lucide-react';
+import { Calendar, Flame, Trophy, TrendingUp, MoreHorizontal, Archive, ChevronsUpDown } from 'lucide-react';
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import AddHabit from "@/components/AddHabit";
@@ -234,7 +234,7 @@ const Dashboard = () => {
         const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
         const startOfLastWeek = new Date(startOfWeek);
-        startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+        startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
         const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
             const date = new Date(startOfLastWeek);
             date.setDate(startOfLastWeek.getDate() + i);
@@ -379,7 +379,7 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {quickStats.map(stat => {
           const card = (
-            <Card>
+            <Card className="relative">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
@@ -387,6 +387,11 @@ const Dashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
               </CardContent>
+              {stat.link && (
+                <div className="absolute bottom-2 right-2">
+                  <ChevronsUpDown className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
             </Card>
           );
 
