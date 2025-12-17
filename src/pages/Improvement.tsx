@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { Progress } from "@/components/ui/progress";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 export type Habit = {
@@ -72,29 +73,84 @@ const ImprovementPage = () => {
   }, [fetchAllHabitData]);
 
   const totalHabits = habits.length;
-
-  // Weekly stats
+  const today = new Date();
   const T = 7;
   const M_per_habit = 4 * T;
-  const today = new Date();
+
+  const calculateOverallCompletionRate = (completions: HabitCompletion[]) => {
+    const totalS = completions.reduce((sum, c) => sum + c.effort_level, 0);
+    const totalM = M_per_habit * habits.length;
+    return totalM > 0 ? (totalS / totalM) * 100 : 0;
+  };
+
+  const currentWeekStartDate = subDays(today, T - 1);
+  const currentWeekEndDate = today;
+  const prevWeekStartDate = subDays(today, 2 * T - 1);
+  const prevWeekEndDate = subDays(today, T);
+
+  const currentWeekCompletions = allHabitCompletions.filter(c => {
+      const completionDate = new Date(c.completion_date);
+      return completionDate >= currentWeekStartDate && completionDate <= currentWeekEndDate;
+  });
+
+  const prevWeekCompletions = allHabitCompletions.filter(c => {
+      const completionDate = new Date(c.completion_date);
+      return completionDate >= prevWeekStartDate && completionDate <= prevWeekEndDate;
+  });
   
-  // Current week (last 7 days)
-  const currentWeekStartDateStr = format(subDays(today, T - 1), 'yyyy-MM-dd');
-  const currentWeekEndDateStr = format(today, 'yyyy-MM-dd');
-  const currentWeekCompletions = allHabitCompletions.filter(c => 
-      c.completion_date >= currentWeekStartDateStr && c.completion_date <= currentWeekEndDateStr
-  );
+  const overallCompletionRate = calculateOverallCompletionRate(currentWeekCompletions);
+  const overallCompletionRate_prev_week = calculateOverallCompletionRate(prevWeekCompletions);
   
-  // Previous week (previous 7 days)
-  const prevWeekStartDateStr = format(subDays(today, 2 * T - 1), 'yyyy-MM-dd');
-  const prevWeekEndDateStr = format(subDays(today, T), 'yyyy-MM-dd');
-  const prevWeekCompletions = allHabitCompletions.filter(c => 
-      c.completion_date >= prevWeekStartDateStr && c.completion_date <= prevWeekEndDateStr
-  );
+  const improvement = overallCompletionRate - overallCompletionRate_prev_week;
+  const improvementValue = isNaN(improvement) ? 0 : improvement;
+
+  const dailyImprovementData = Array.from({ length: 30 }).map((_, i) => {
+    const date = subDays(today, i);
+    const dataPoint: { [key: string]: any } = {
+      name: format(date, 'MMM d'),
+    };
+
+    habits.forEach(habit => {
+      const calculateHabitCompletionRate = (completions: HabitCompletion[]) => {
+        const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+        const totalS = habitCompletions.reduce((sum, c) => sum + c.effort_level, 0);
+        const totalM = 4 * T;
+        return totalM > 0 ? (totalS / totalM) * 100 : 0;
+      };
+
+      const currentWeekStartDate = subDays(date, T - 1);
+      const currentWeekEndDate = date;
+      const prevWeekStartDate = subDays(date, 2 * T - 1);
+      const prevWeekEndDate = subDays(date, T);
+
+      const currentWeekCompletions = allHabitCompletions.filter(c => {
+        const completionDate = new Date(c.completion_date);
+        return completionDate >= currentWeekStartDate && completionDate <= currentWeekEndDate;
+      });
+
+      const prevWeekCompletions = allHabitCompletions.filter(c => {
+        const completionDate = new Date(c.completion_date);
+        return completionDate >= prevWeekStartDate && completionDate <= prevWeekEndDate;
+      });
+
+      const currentRate = calculateHabitCompletionRate(currentWeekCompletions);
+      const prevRate = calculateHabitCompletionRate(prevWeekCompletions);
+      const improvement = currentRate - prevRate;
+
+      dataPoint[habit.name] = improvement;
+    });
+
+    return dataPoint;
+  }).reverse();
 
   const weeklyStatsByHabit = habits.map(habit => {
-    const completions = currentWeekCompletions.filter(c => c.habit_id === habit.id);
-    const S = completions.reduce((sum, c) => sum + c.effort_level, 0);
+    const currentWeekStartDateStr = format(subDays(today, T - 1), 'yyyy-MM-dd');
+    const currentWeekEndDateStr = format(today, 'yyyy-MM-dd');
+    const currentWeekCompletions = allHabitCompletions.filter(c => 
+        c.completion_date >= currentWeekStartDateStr && c.completion_date <= currentWeekEndDateStr && c.habit_id === habit.id
+    );
+    
+    const S = currentWeekCompletions.reduce((sum, c) => sum + c.effort_level, 0);
     const habitPercentage = M_per_habit > 0 ? (S / M_per_habit) * 100 : 0;
     const avgLevel = T > 0 ? S / T : 0;
     
@@ -105,46 +161,75 @@ const ImprovementPage = () => {
       avgLevel
     };
   });
-  
-  const totalS_current_week = currentWeekCompletions.reduce((sum, c) => sum + c.effort_level, 0);
-  const totalM_current_week = M_per_habit * habits.length;
-  const overallCompletionRate = totalM_current_week > 0 ? (totalS_current_week / totalM_current_week) * 100 : 0;
 
-  const totalS_prev_week = prevWeekCompletions.reduce((sum, c) => sum + c.effort_level, 0);
-  const totalM_prev_week = M_per_habit * habits.length; // Assuming same number of habits
-  const overallCompletionRate_prev_week = totalM_prev_week > 0 ? (totalS_prev_week / totalM_prev_week) * 100 : 0;
+  const chartData = dailyImprovementData;
 
-  const improvement = overallCompletionRate - overallCompletionRate_prev_week;
-  const improvementValue = isNaN(improvement) ? 0 : improvement;
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="p-2 bg-zinc-950 text-white rounded-md border border-zinc-800">
+          <p className="label font-semibold">{label}</p>
+          {payload.map((pld: any) => (
+            <div key={pld.dataKey} style={{ color: pld.fill }}>
+              {`${pld.dataKey}: ${pld.value.toFixed(1)}%`}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   if (loading) {
-    return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    return <div className="p-8 text-center text-muted-foreground bg-black">Loading...</div>;
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight">Improvement</h1>
-        <Card>
+    <div className="p-4 md:p-8 space-y-8 bg-black text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-white">Improvement</h1>
+        <Card className="bg-zinc-900 border-zinc-800 text-white">
             <CardContent className="flex items-center justify-center p-6">
                 <div className="text-center">
-                    <div className="text-5xl font-bold flex items-center">
+                    <div className="text-5xl font-bold flex items-center text-white">
                         {improvementValue.toFixed(0)}%
                         {improvementValue > 0 && <TrendingUp className="ml-2 h-8 w-8 text-green-500" />}
                         {improvementValue < 0 && <TrendingDown className="ml-2 h-8 w-8 text-red-500" />}
                     </div>
-                    <p className="text-lg text-muted-foreground">Improvement (Last 7 days)</p>
+                    <p className="text-lg text-zinc-400">Improvement (Last 7 days)</p>
                 </div>
             </CardContent>
         </Card>
 
         {habits.length > 0 ? (
-            <Card>
+            <Card className="bg-zinc-900 border-zinc-800 text-white">
+                <CardHeader>
+                    <CardTitle className="text-white">Monthly Improvement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a"/>
+                            <XAxis dataKey="name" tick={{ fill: '#a0a0a0' }} stroke="#a0a0a0" />
+                            <YAxis tick={{ fill: '#a0a0a0' }} stroke="#a0a0a0" />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(136, 132, 216, 0.2)' }}/>
+                            <Legend wrapperStyle={{ color: '#a0a0a0' }}/>
+                            {habits.map(habit => (
+                                <Bar key={habit.id} dataKey={habit.name} fill={habit.color || '#8884d8'} />
+                            ))}
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+        ) : null}
+
+        {habits.length > 0 ? (
+            <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader>
                     <div className="flex flex-row items-center justify-between">
-                        <CardTitle>Habit Weekly Stats</CardTitle>
+                        <CardTitle className="text-white">Habit Weekly Stats</CardTitle>
                         <div className="text-right">
                             <span className="text-2xl font-bold">{totalHabits}</span>
-                            <p className="text-sm text-muted-foreground">Total Habits</p>
+                            <p className="text-sm text-zinc-400">Total Habits</p>
                         </div>
                     </div>
                 </CardHeader>
@@ -155,11 +240,11 @@ const ImprovementPage = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                     <div style={{ backgroundColor: habit.color || '#fbbf24' }} className="w-4 h-4 rounded-full mr-3"></div>
-                                    <span className="font-semibold">{habit.name}</span>
+                                    <span className="font-semibold text-white">{habit.name}</span>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-bold">{habit.habitPercentage.toFixed(0)}% this week</div>
-                                    <div className="text-sm text-muted-foreground">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
+                                    <div className="font-bold text-white">{habit.habitPercentage.toFixed(0)}% this week</div>
+                                    <div className="text-sm text-zinc-400">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
                                 </div>
                             </div>
                             <Progress value={habit.habitPercentage} className="w-full" />
@@ -169,12 +254,12 @@ const ImprovementPage = () => {
                 </CardContent>
             </Card>
         ) : (
-            <Card>
+            <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader>
-                    <CardTitle>No Habits Found</CardTitle>
+                    <CardTitle className="text-white">No Habits Found</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">You haven't added any habits yet. Go to the dashboard to add your first habit.</p>
+                    <p className="text-zinc-400">You haven't added any habits yet. Go to the dashboard to add your first habit.</p>
                 </CardContent>
             </Card>
         )}
