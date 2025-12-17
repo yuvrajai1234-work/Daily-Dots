@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,7 +119,9 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
           />
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <DialogClose asChild>
+            <Button variant="secondary">Cancel</Button>
+          </DialogClose>
           <Button onClick={handleAddHabit}>Add Habit</Button>
         </DialogFooter>
       </DialogContent>
