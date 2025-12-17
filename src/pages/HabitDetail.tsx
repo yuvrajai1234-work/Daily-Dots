@@ -41,6 +41,10 @@ const HabitDetail = () => {
   const [improvement, setImprovement] = useState(0);
   const [weeklyPercentage, setWeeklyPercentage] = useState(0);
   const [avgWeeklyLevel, setAvgWeeklyLevel] = useState(0);
+  const [overallImprovement, setOverallImprovement] = useState(0);
+  const [overallPercentage, setOverallPercentage] = useState(0);
+  const [avgOverallLevel, setAvgOverallLevel] = useState(0);
+
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -123,6 +127,42 @@ const HabitDetail = () => {
         const weeklyPerc = (cycleScore / (4 * 7)) * 100;
         setAvgWeeklyLevel(weeklyAvg);
         setWeeklyPercentage(weeklyPerc);
+
+        // Overall improvement (last 30 days vs previous 30 days)
+        const endDateOverall = new Date();
+        const startDateOverall = new Date();
+        startDateOverall.setDate(endDateOverall.getDate() - 30);
+
+        const prevEndDateOverall = new Date(startDateOverall);
+        const prevStartDateOverall = new Date(startDateOverall);
+        prevStartDateOverall.setDate(startDateOverall.getDate() - 30);
+
+        const recent30DaysCompletions = completions.filter(c => {
+            const completionDate = new Date(c.completion_date);
+            return completionDate >= startDateOverall && completionDate <= endDateOverall;
+        });
+        const recent30DaysScore = recent30DaysCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const previous30DaysCompletions = completions.filter(c => {
+            const completionDate = new Date(c.completion_date);
+            return completionDate >= prevStartDateOverall && completionDate < prevEndDateOverall;
+        });
+        const previous30DaysScore = previous30DaysCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+
+        const T_overall = 30;
+        const M_overall = 4 * T_overall;
+
+        const overallCompletionRate_current = M_overall > 0 ? (recent30DaysScore / M_overall) * 100 : 0;
+        const overallCompletionRate_prev = M_overall > 0 ? (previous30DaysScore / M_overall) * 100 : 0;
+
+        const overallImprovementValue = Math.round(overallCompletionRate_current - overallCompletionRate_prev);
+        setOverallImprovement(overallImprovementValue);
+
+        const overallAvg = recent30DaysScore / 30;
+        const overallPerc = (recent30DaysScore / (4 * 30)) * 100;
+        setAvgOverallLevel(overallAvg);
+        setOverallPercentage(overallPerc);
+
 
       } catch (error: any) {
         console.error("Error fetching habit details:", error.message);
@@ -219,6 +259,34 @@ const HabitDetail = () => {
                     </div>
                 </div>
                 <Progress value={weeklyPercentage} className="w-full mt-2" />
+            </CollapsibleContent>
+        </Collapsible>
+
+        <Collapsible>
+            <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between cursor-pointer py-2 border-y">
+                    <h3 className="text-lg font-medium">Overall Stats (30 days)</h3>
+                    <div className="flex items-center">
+                        <div className={`text-sm font-bold flex items-center mr-2 ${overallImprovement > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            <TrendingUp className="w-4 h-4 mr-1" />
+                            {overallImprovement > 0 ? '+' : ''}{overallImprovement}%
+                        </div>
+                        <ChevronsUpDown className="h-4 w-4" />
+                    </div>
+                </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                        <span style={{ color: habit.color, fontSize: '1rem' }} className="mr-2">●</span>
+                        <span className="font-medium">{habit.name}</span>
+                    </div>
+                    <div className="text-right">
+                        <div className="font-bold">{overallPercentage.toFixed(0)}% last 30 days</div>
+                        <div className="text-sm text-muted-foreground">Avg level: {avgOverallLevel.toFixed(1)} / 4</div>
+                    </div>
+                </div>
+                <Progress value={overallPercentage} className="w-full mt-2" />
             </CollapsibleContent>
         </Collapsible>
 
