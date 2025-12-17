@@ -6,24 +6,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { subDays, format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, Archive, ArchiveRestore } from "lucide-react";
+import { Edit, Trash2, MoreHorizontal, Archive, ArchiveRestore } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-
-const predefinedHabits = [
-  "Drink Sufficient Water",
-  "Stretching or Mobility Routine",
-  "Read for 15 Minutes",
-  "Go for a Walk",
-  "Practice Mindfulness or Meditation",
-  "No Sugar",
-  "Eat a Healthy Meal",
-  "Review Daily Goals",
-];
+import AddHabit from "@/components/AddHabit";
 
 const AnalyticsPage = () => {
   const { session } = useAuth();
@@ -36,11 +22,6 @@ const AnalyticsPage = () => {
   const [totalHabitPoints, setTotalHabitPoints] = useState(0);
   const [habitPointsBreakdown, setHabitPointsBreakdown] = useState([]);
   const [refreshCount, setRefreshCount] = useState(0);
-  const [isAddHabitDialogOpen, setIsAddHabitDialogOpen] = useState(false);
-  const [selectedHabit, setSelectedHabit] = useState("");
-  const [customHabit, setCustomHabit] = useState("");
-  const [habitIcon, setHabitIcon] = useState("");
-  const [habitGoal, setHabitGoal] = useState([50]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,31 +84,8 @@ const AnalyticsPage = () => {
     fetchData();
   }, [session, refreshCount]);
 
-  const handleAddHabit = () => {
-    setSelectedHabit("");
-    setCustomHabit("");
-    setHabitIcon("");
-    setHabitGoal([50]);
-    setIsAddHabitDialogOpen(true);
-  };
-  
-  const handleSaveHabit = async () => {
-    const habitName = customHabit.trim() || selectedHabit;
-    if (!habitName) {
-        alert("Please select or type a habit.");
-        return;
-    }
-
-    const { error } = await supabase.from('habits').insert([
-        { name: habitName, user_id: session.user.id, description: habitIcon, goal: habitGoal[0], is_archived: false }
-    ]);
-
-    if (error) {
-        alert(`Error adding habit: ${error.message}`);
-    } else {
-        setIsAddHabitDialogOpen(false);
-        setRefreshCount(c => c + 1);
-    }
+  const onHabitAdded = () => {
+    setRefreshCount(c => c + 1);
   };
 
   const handleEditHabit = (id) => {
@@ -215,7 +173,7 @@ const AnalyticsPage = () => {
             <CardTitle>Manage Habits</CardTitle>
             <CardDescription>Add, edit, or remove your current habits.</CardDescription>
           </div>
-          <Button onClick={handleAddHabit}><PlusCircle className="mr-2 h-4 w-4" /> Add New Habit</Button>
+          <AddHabit onHabitAdded={onHabitAdded} />
         </CardHeader>
         <CardContent>
           <Table>
@@ -282,55 +240,6 @@ const AnalyticsPage = () => {
           </Table>
         </CardContent>
       </Card>
-
-      <Dialog open={isAddHabitDialogOpen} onOpenChange={setIsAddHabitDialogOpen}>
-        <DialogContent className="bg-gray-800 text-white border-gray-700">
-            <DialogHeader>
-                <DialogTitle>Add a New Habit</DialogTitle>
-                <DialogDescription>What habit would you like to track?</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-                <Select onValueChange={(value) => { setSelectedHabit(value); setCustomHabit(''); }}>
-                    <SelectTrigger className="w-full bg-gray-700 border-purple-500">
-                        <SelectValue placeholder="Select a habit" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 text-white">
-                        {predefinedHabits.map(habit => (
-                            <SelectItem key={habit} value={habit}>{habit}</SelectItem>
-                        )) }
-                    </SelectContent>
-                </Select>
-
-                <div className="text-center text-gray-400">Or type a custom habit</div>
-
-                <Input 
-                    placeholder="Or type a custom habit"
-                    value={customHabit}
-                    onChange={(e) => { setCustomHabit(e.target.value); setSelectedHabit(''); }}
-                    className="bg-gray-700"
-                />
-                <Input 
-                    placeholder="Icon (e.g., 💪)"
-                    value={habitIcon}
-                    onChange={(e) => setHabitIcon(e.target.value)}
-                    className="bg-gray-700"
-                />
-                <Slider
-                    defaultValue={[50]}
-                    max={100}
-                    step={1}
-                    onValueChange={setHabitGoal}
-                    className="[&>span:first-child]:h-full [&>span:first-child]:bg-purple-500"
-                />
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button onClick={handleSaveHabit} className="bg-purple-600 hover:bg-purple-700">Add Habit</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
