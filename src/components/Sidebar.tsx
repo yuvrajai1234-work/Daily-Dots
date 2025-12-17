@@ -72,7 +72,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                         <NavLink
                             to={to}
                             className={({ isActive }) =>
-                            `flex items-center p-2 text-sm font-medium rounded-md ${isActive ? "bg-muted" : "hover:bg-muted/50"} ${isCollapsed ? 'justify-center h-10 w-10' : 'h-10'}`
+                                `flex items-center p-2 text-sm font-medium rounded-xl transition-all duration-300 ${
+                                isActive
+                                    ? 'bg-[#164e63] text-white'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                } ${isCollapsed ? 'justify-center h-10 w-10' : 'h-10'}`
                             }
                         >
                             <Icon className="h-5 w-5" />

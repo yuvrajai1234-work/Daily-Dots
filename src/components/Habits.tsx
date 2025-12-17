@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -32,8 +33,9 @@ import { useAuth } from "./AuthProvider";
 import { useEffect, useState, useCallback } from "react";
 import AddHabit from "./AddHabit";
 import EditHabit from "./EditHabit";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Archive, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ArchivedHabitsTable from './ArchivedHabitsTable';
 
 // Updated Habit type to match new schema
 export type Habit = {
@@ -43,6 +45,7 @@ export type Habit = {
   color: string | null;
   created_at: string;
   user_id: string;
+  is_archived: boolean;
 };
 
 // New HabitCompletion type
@@ -55,6 +58,7 @@ export type HabitCompletion = {
 
 const Habits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [archivedHabits, setArchivedHabits] = useState<Habit[]>([]);
   const [habitCompletions, setHabitCompletions] = useState<HabitCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const { session } = useAuth();
@@ -69,12 +73,15 @@ const Habits = () => {
       // Fetched corrected columns
       const { data, error } = await supabase
         .from("habits")
-        .select("id, name, icon, color, created_at, user_id")
+        .select("id, name, icon, color, created_at, user_id, is_archived")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setHabits(data || []);
+      const activeHabits = data.filter(habit => !habit.is_archived);
+      const archived = data.filter(habit => habit.is_archived);
+      setHabits(activeHabits || []);
+      setArchivedHabits(archived || []);
     } catch (error: any) {
       console.error("Error fetching habits:", error.message);
     } finally {
@@ -128,7 +135,35 @@ const Habits = () => {
     }
   };
 
-  // Renamed and updated to handle effort_level
+  const handleArchive = async (habitId: string) => {
+    if (!window.confirm("Are you sure you want to archive this habit?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("habits")
+        .update({ is_archived: true })
+        .eq("id", habitId);
+
+      if (error) throw error;
+      fetchHabits(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error archiving habit:", error.message);
+    }
+  };
+
+  const handleUnarchive = async (habitId: string) => {
+    try {
+      const { error } = await supabase
+        .from('habits')
+        .update({ is_archived: false })
+        .eq('id', habitId);
+      if (error) throw error;
+      fetchHabits();
+    } catch (error: any) {
+      console.error('Error unarchiving habit:', error.message);
+    }
+  };
+
   const handleEffortChange = async (habitId: string, effortLevel: string) => {
     if (!session) return;
     const today = new Date().toISOString().slice(0, 10);
@@ -222,9 +257,15 @@ const Habits = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEditClick(habit)}>
+                            <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleArchive(habit.id)}>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(habit.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -237,12 +278,19 @@ const Habits = () => {
           )}
         </CardContent>
       </Card>
-      <EditHabit
-        habit={selectedHabit}
-        isOpen={isEditDialogOpen}
-        onClose={handleCloseDialog}
-        onHabitUpdated={fetchHabits}
-      />
+       {archivedHabits.length > 0 && (
+        <div className="mt-8">
+          <ArchivedHabitsTable archivedHabits={archivedHabits} onUnarchive={handleUnarchive} />
+        </div>
+      )}
+      {selectedHabit && (
+        <EditHabit
+          habit={selectedHabit}
+          isOpen={isEditDialogOpen}
+          onClose={handleCloseDialog}
+          onHabitUpdated={fetchHabits}
+        />
+      )}
     </>
   );
 };

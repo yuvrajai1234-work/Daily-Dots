@@ -55,29 +55,23 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAddHabit = async () => {
-    if (!session) return;
-    if (!habitName) return;
+    if (!session || !habitName) return;
 
-    try {
-      const { data, error } = await supabase
-        .from("habits")
-        .insert([{ name: habitName, icon, color, user_id: session.user.id }])
-        .select();
+    const {
+      error,
+    } = await supabase
+      .from("habits")
+      .insert([{ name: habitName, icon, color, user_id: session.user.id }]);
 
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        onHabitAdded();
-        setIsOpen(false);
-        setHabitName("");
-        setIcon("");
-        setColor("#e5e7eb");
-      }
-
-    } catch (error: any) {
+    if (error) {
       console.error("Error adding habit:", error.message);
+      alert(`Error adding habit: ${error.message}`);
+    } else {
+      onHabitAdded();
+      setIsOpen(false);
+      setHabitName("");
+      setIcon("");
+      setColor("#e5e7eb");
     }
   };
 

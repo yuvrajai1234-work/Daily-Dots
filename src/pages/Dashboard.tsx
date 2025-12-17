@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Flame, Trophy, TrendingUp, MoreHorizontal } from 'lucide-react';
+import { Calendar, Flame, Trophy, TrendingUp, MoreHorizontal, Archive } from 'lucide-react';
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import AddHabit from "@/components/AddHabit";
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
+const HabitCard = ({ habit, onDelete, onEdit, onLogEffort, onArchive }) => (
   <Card style={{ backgroundColor: habit.color }} className="flex flex-col justify-between text-white">
     <CardHeader>
       <div className="flex items-center justify-between">
@@ -38,6 +38,10 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort }) => (
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDelete(habit.id)}>
               Delete
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onArchive(habit.id)}>
+              <Archive className="mr-2 h-4 w-4" />
+              Archive
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -204,9 +208,10 @@ const Dashboard = () => {
     const today = new Date().toISOString().split('T')[0];
     const { data: habits, error: habitsError } = await supabase
       .from('habits')
-      .select('*, habit_completions (id, completion_date, effort_level)')
+      .select('id, name, icon, color, created_at, user_id, is_archived, habit_completions (id, completion_date, effort_level)')
       .eq('user_id', session.user.id)
-      .eq('habit_completions.completion_date', today);
+      .eq('habit_completions.completion_date', today)
+      .eq('is_archived', false);
 
     if (habitsError) {
       console.error('Error fetching habits:', habitsError);
@@ -274,7 +279,14 @@ const Dashboard = () => {
       fetchData();
     }
 
-    const subscription = supabase
+    const habitSubscription = supabase
+      .channel('public:habits')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    const completionSubscription = supabase
       .channel('public:habit_completions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => {
         fetchData();
@@ -282,7 +294,8 @@ const Dashboard = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(habitSubscription);
+      supabase.removeChannel(completionSubscription);
     };
   }, [session, fetchData]);
 
@@ -294,6 +307,16 @@ const Dashboard = () => {
       fetchData();
     } catch (error) {
       console.error("Error deleting habit:", error.message);
+    }
+  };
+
+  const handleArchive = async (habitId) => {
+    if (!window.confirm("Are you sure you want to archive this habit?")) return;
+    try {
+      const { error } = await supabase.from("habits").update({ is_archived: true }).eq("id", habitId);
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error archiving habit:", error.message);
     }
   };
 
@@ -388,7 +411,7 @@ const Dashboard = () => {
           {habits.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {habits.map(habit => (
-                <HabitCard key={habit.id} habit={habit} onDelete={handleDelete} onEdit={handleEdit} onLogEffort={handleLogEffort} />
+                <HabitCard key={habit.id} habit={habit} onDelete={handleDelete} onEdit={handleEdit} onLogEffort={handleLogEffort} onArchive={handleArchive} />
               ))}
             </div>
           ) : (

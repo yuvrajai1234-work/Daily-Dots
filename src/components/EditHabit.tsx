@@ -12,7 +12,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 
-const EditHabit = ({ habit, onHabitUpdated, isOpen, setIsOpen }) => {
+const EditHabit = ({ habit, onHabitUpdated, isOpen, onClose }) => {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [color, setColor] = useState("");
@@ -36,7 +36,7 @@ const EditHabit = ({ habit, onHabitUpdated, isOpen, setIsOpen }) => {
 
       if (error) throw error;
       onHabitUpdated();
-      setIsOpen(false);
+      onClose();
     } catch (error) {
       console.error("Error updating habit:", error.message);
     }
@@ -45,7 +45,7 @@ const EditHabit = ({ habit, onHabitUpdated, isOpen, setIsOpen }) => {
   if (!habit) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Habit</DialogTitle>
@@ -83,7 +83,7 @@ const EditHabit = ({ habit, onHabitUpdated, isOpen, setIsOpen }) => {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button onClick={handleUpdate}>Save Changes</Button>

@@ -25,11 +25,13 @@ const CalendarPage = () => {
 
   const fetchSpecialEvents = async () => {
     if (!session) return;
+    const today = new Date().toISOString();
     const { data: remindersData, error: remindersError } = await supabase
       .from("reminders")
       .select("id, reminder_time, reminder_message, is_special_event")
       .eq("user_id", session.user.id)
       .eq("is_special_event", true)
+      .gte("reminder_time", today)
       .order("reminder_time");
 
     if (remindersError) {

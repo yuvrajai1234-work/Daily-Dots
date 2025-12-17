@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, startOfDay, endOfDay, isBefore, startOfToday } from "date-fns";
+import { format, startOfDay, endOfDay, parseISO } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { Trash2 } from "lucide-react";
 
@@ -20,9 +20,6 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
   const [newReminderTime, setNewReminderTime] = useState("12:00");
   const [isSpecialEvent, setIsSpecialEvent] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isTimeValid, setIsTimeValid] = useState(true);
-
-  const isPastDate = isBefore(selectedDate, startOfToday());
 
   useEffect(() => {
     const fetchReminders = async () => {
@@ -48,14 +45,6 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
 
     fetchReminders();
   }, [session, selectedDate]);
-
-  useEffect(() => {
-    const [hours, minutes] = newReminderTime.split(':');
-    const reminderDateTime = new Date(selectedDate);
-    reminderDateTime.setHours(parseInt(hours, 10));
-    reminderDateTime.setMinutes(parseInt(minutes, 10));
-    setIsTimeValid(isBefore(new Date(), reminderDateTime));
-}, [newReminderTime, selectedDate]);
 
   const handleAddReminder = async () => {
     if (!session || !newReminderMessage.trim()) return;
@@ -114,7 +103,7 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={isPastDate}>Add Reminder</Button>
+            <Button>Add Reminder</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -134,7 +123,7 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddReminder} disabled={!isTimeValid}>Save Reminder</Button>
+              <Button onClick={handleAddReminder}>Save Reminder</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -153,13 +142,12 @@ const Reminders = ({ selectedDate, onSpecialEventAdded }) => {
               reminders.map((reminder) => (
                 <TableRow key={reminder.id}>
                   <TableCell>{reminder.reminder_message}</TableCell>
-                  <TableCell>{format(new Date(reminder.reminder_time), "p")}</TableCell>
+                  <TableCell>{format(parseISO(reminder.reminder_time), "p")}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteReminder(reminder.id)}
-                      disabled={isPastDate}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
