@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const habits = [
+const predefinedHabits = [
   "Daily Exercise",
   "Drink Sufficient Water",
   "Consistent Sleep Schedule",
@@ -48,12 +48,17 @@ const habits = [
   "Doom Scrolling",
 ];
 
-const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
+const AddHabit = ({ onHabitAdded, userHabits = [] }: { onHabitAdded: () => void, userHabits: { name: string }[] }) => {
   const { session } = useAuth();
   const [habitName, setHabitName] = useState("");
   const [icon, setIcon] = useState("");
   const [color, setColor] = useState("#e5e7eb");
   const [isOpen, setIsOpen] = useState(false);
+
+  const availableHabits = useMemo(() => {
+    const existingHabitNames = userHabits.map(h => h.name);
+    return predefinedHabits.filter(h => !existingHabitNames.includes(h));
+  }, [userHabits]);
 
   const handleAddHabit = async () => {
     if (!session || !habitName) return;
@@ -94,7 +99,7 @@ const AddHabit = ({ onHabitAdded }: { onHabitAdded: () => void }) => {
               <SelectValue placeholder="Select a habit" />
             </SelectTrigger>
             <SelectContent>
-              {habits.map((habit) => (
+              {availableHabits.map((habit) => (
                 <SelectItem key={habit} value={habit}>
                   {habit}
                 </SelectItem>

@@ -16,7 +16,7 @@ const AnalyticsPage = () => {
   const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState<{name: string, id: string, is_archived: boolean}[]>([]);
   const [archivedHabits, setArchivedHabits] = useState([]);
   const [totalHabits, setTotalHabits] = useState(0);
   const [totalHabitPoints, setTotalHabitPoints] = useState(0);
@@ -173,7 +173,7 @@ const AnalyticsPage = () => {
             <CardTitle>Manage Habits</CardTitle>
             <CardDescription>Add, edit, or remove your current habits.</CardDescription>
           </div>
-          <AddHabit onHabitAdded={onHabitAdded} />
+          <AddHabit onHabitAdded={onHabitAdded} userHabits={habits} />
         </CardHeader>
         <CardContent>
           <Table>

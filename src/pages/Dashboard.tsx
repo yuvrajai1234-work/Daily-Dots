@@ -80,7 +80,7 @@ const HabitCard = ({ habit, onDelete, onEdit, onLogEffort, onArchive }) => (
 
 const Dashboard = () => {
   const { session } = useAuth();
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState<{name: string}[]>([]);
   const [greeting, setGreeting] = useState('');
   const [stats, setStats] = useState({
     todayScore: 0,
@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight">Today's Habits</h2>
-            <AddHabit onHabitAdded={fetchData} />
+            <AddHabit onHabitAdded={fetchData} userHabits={habits} />
           </div>
           {habits.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
