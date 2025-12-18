@@ -19,7 +19,7 @@ const AIAssistant = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ data: { prompt } }),
+        body: JSON.stringify({ message: prompt }),
       });
 
       if (!res.ok) {
@@ -27,7 +27,7 @@ const AIAssistant = () => {
       }
 
       const data = await res.json();
-      setResponse(data.result);
+      setResponse(data.response);
     } catch (error) {
       console.error("Error calling AI assistant:", error);
       setResponse("Sorry, something went wrong.");
