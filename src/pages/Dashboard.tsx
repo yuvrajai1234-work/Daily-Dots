@@ -126,7 +126,7 @@ const Dashboard = () => {
     const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
     const startOfLastWeek = new Date(startOfWeek);
-    startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
     const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
         const date = new Date(startOfLastWeek);
         date.setDate(startOfLastWeek.getDate() + i);

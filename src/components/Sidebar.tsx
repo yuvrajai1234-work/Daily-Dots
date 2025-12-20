@@ -56,11 +56,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <TooltipProvider>
-        <div className={`hidden md:flex flex-col bg-background border-r transition-all duration-300 fixed h-full ${isCollapsed ? 'w-20' : 'w-64'}`}>
-            <div className="flex items-center h-16 border-b px-4 shrink-0">
-                <div className={`flex-1 ${isCollapsed ? 'hidden' : 'block'}`}>
-                    <h1 className="text-2xl font-bold gradient-text">DailyDots</h1>
-                </div>
+        <div className={`hidden md:flex flex-col bg-background border-r transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+            <div className="flex items-center justify-between p-2">
+                <h1 className={`text-2xl font-bold gradient-text ${isCollapsed ? 'hidden' : 'block'}`}>
+                  DailyDots
+                </h1>
                 <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(prev => !prev)}>
                     {isCollapsed ? <ChevronsRight /> : <ChevronsLeft />}
                 </Button>
@@ -102,8 +102,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <Tooltip delayDuration={0} disableHoverableContent={!isCollapsed}>
                     <TooltipTrigger asChild>
                         <Button variant="outline" className={`w-full mt-4 ${isCollapsed ? 'h-10 w-10 p-0' : ''}`} onClick={handleLogout}>
-                            <LogOut className="h-5 w-5" />
-                            <span className={isCollapsed ? 'hidden' : 'ml-3'}>Logout</span>
+                            <LogOut className={isCollapsed ? 'h-5 w-5' : 'h-5 w-5 mr-3'} />
+                            <span className={isCollapsed ? 'hidden' : 'block'}>Logout</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">
