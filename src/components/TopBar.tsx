@@ -22,6 +22,8 @@ export function TopBar() {
 
   // Get the coins value from the user profile, or default to 0
   const coins = userProfile?.coins ?? 0;
+  const gems = userProfile?.gems ?? 0;
+  const shields = userProfile?.shields ?? 0;
 
   return (
     <div className="bg-gray-900 text-white border-b">
@@ -41,12 +43,6 @@ export function TopBar() {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            <span role="img" aria-label="Energy">
-              ⚡️
-            </span>
-            <span className="ml-2">1/100</span>
-          </div>
-          <div className="flex items-center">
             <span role="img" aria-label="Coins">
               💰
             </span>
@@ -56,13 +52,13 @@ export function TopBar() {
             <span role="img" aria-label="Gems">
               💎
             </span>
-            <span className="ml-2">900</span>
+            <span className="ml-2">{gems}</span>
           </div>
           <div className="flex items-center">
             <span role="img" aria-label="Shield">
               🛡️
             </span>
-            <span className="ml-2">999,999,999</span>
+            <span className="ml-2">{shields}</span>
           </div>
           <Link to="/earn-coins">
             <Button variant="ghost" size="icon">
