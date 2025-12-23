@@ -4,10 +4,12 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useAuth } from "./AuthProvider";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useUserProfile } from "@/hooks/useUserProfile"; // Import the new hook
 
 export function TopBar() {
   const { session } = useAuth();
   const { isSidebarCollapsed } = useSidebar();
+  const { userProfile } = useUserProfile(); // Use the new hook
   const user = session?.user;
 
   const displayName =
@@ -17,6 +19,9 @@ export function TopBar() {
     "User";
   const displayInitial = displayName?.charAt(0).toUpperCase() || "U";
   const avatarUrl = user?.user_metadata?.avatar_url;
+
+  // Get the coins value from the user profile, or default to 0
+  const coins = userProfile?.coins ?? 0;
 
   return (
     <div className="bg-gray-900 text-white border-b">
@@ -45,7 +50,7 @@ export function TopBar() {
             <span role="img" aria-label="Coins">
               💰
             </span>
-            <span className="ml-2">105,024</span>
+            <span className="ml-2">{coins}</span>
           </div>
           <div className="flex items-center">
             <span role="img" aria-label="Gems">
