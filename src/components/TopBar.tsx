@@ -43,21 +43,15 @@ export function TopBar() {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            <span role="img" aria-label="Coins">
-              💰
-            </span>
+            <img src="/A coins.png" alt="Coins" className="w-6 h-6" />
             <span className="ml-2">{coins}</span>
           </div>
           <div className="flex items-center">
-            <span role="img" aria-label="Gems">
-              💎
-            </span>
+            <img src="/B coins.png" alt="Gems" className="w-6 h-6" />
             <span className="ml-2">{gems}</span>
           </div>
           <div className="flex items-center">
-            <span role="img" aria-label="Shield">
-              🛡️
-            </span>
+            <img src="/P coin.png" alt="Shield" className="w-6 h-6" />
             <span className="ml-2">{shields}</span>
           </div>
           <Link to="/earn-coins">
