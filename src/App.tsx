@@ -15,7 +15,7 @@ import Profile from "@/pages/Profile";
 import Achievements from "@/pages/Achievements";
 import JournalPage from "@/pages/JournalPage";
 import Community from "@/pages/Community";
-import Reminders from "@/pages/Reminders";
+import Inbox from "@/pages/Inbox";
 import EarnCoins from "@/pages/EarnCoins";
 import Rewards from "@/pages/Rewards";
 import AIAssistant from "@/pages/AIAssistant";
@@ -55,7 +55,7 @@ function App() {
                     <Route path="/achievements" element={<Achievements />} />
                     <Route path="/journal" element={<JournalPage />} />
                     <Route path="/community" element={<Community />} />
-                    <Route path="/reminders" element={<Reminders />} />
+                    <Route path="/inbox" element={<Inbox />} />
                     <Route path="/earn-coins" element={<EarnCoins />} />
                     <Route path="/rewards" element={<Rewards />} />
                     <Route path="/ai-assistant" element={<AIAssistant />} />

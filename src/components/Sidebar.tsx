@@ -33,7 +33,7 @@ const navLinks = [
     { to: "/analytics", label: "Analytics", icon: LineChart },
     { to: "/journal", label: "Journal", icon: Book },
     { to: "/community", label: "Community", icon: Users },
-    { to: "/reminders", label: "Reminders", icon: Bell },
+    { to: "/inbox", label: "Inbox", icon: Bell },
     { to: "/earn-coins", label: "Earn Coins", icon: CircleDollarSign },
     { to: "/rewards", label: "Rewards", icon: Gift },
     { to: "/ai-assistant", label: "AI Assistant", icon: Bot },
