@@ -10,11 +10,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useState } from "react";
 
 export function TopBar() {
   const { session } = useAuth();
   const { isSidebarCollapsed } = useSidebar();
   const user = session?.user;
+  const [completedQuests, setCompletedQuests] = useState(4); // Example state
 
   const displayName =
     user?.user_metadata?.name ||
@@ -71,7 +73,7 @@ export function TopBar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center">
-                  <img src="/P coin.png" alt="Shield" className="w-6 h-6" />
+                  <img src="/P coins.png" alt="Shield" className="w-6 h-6" />
                   <span className="ml-2">{p_coins}</span>
                 </div>
               </TooltipTrigger>
@@ -84,6 +86,18 @@ export function TopBar() {
                 <span role="img" aria-label="Cart">
                   🛒
                 </span>
+              </Button>
+            </Link>
+            <Link to="/inbox" className="relative">
+              <Button variant="ghost" size="icon">
+                <span role="img" aria-label="Inbox">
+                  🔔
+                </span>
+                {completedQuests > 0 && (
+                  <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
+                    {completedQuests}
+                  </span>
+                )}
               </Button>
             </Link>
             <Link to="/">
