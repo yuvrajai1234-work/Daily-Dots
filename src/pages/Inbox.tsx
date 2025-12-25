@@ -1,7 +1,58 @@
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 const Inbox = () => {
+  const { session } = useAuth();
+  const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
+
+  const canClaimReward = () => {
+    const lastClaim = session?.user?.user_metadata?.last_login_reward_claim;
+    if (!lastClaim) {
+      return true; // Never claimed before
+    }
+    const lastClaimDate = new Date(lastClaim);
+    const today = new Date();
+    // Compare year, month, and day
+    return (
+      lastClaimDate.getFullYear() !== today.getFullYear() ||
+      lastClaimDate.getMonth() !== today.getMonth() ||
+      lastClaimDate.getDate() !== today.getDate()
+    );
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+        setLoginRewardClaimed(!canClaimReward());
+    }
+  }, [session]);
+
+  const handleClaimLoginReward = async () => {
+    if (!session || !canClaimReward()) return;
+
+    const user = session.user;
+    const currentBCoins = user.user_metadata.b_coins || 0;
+    const rewardAmount = 5;
+    const newBCoins = currentBCoins + rewardAmount;
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        b_coins: newBCoins,
+        last_login_reward_claim: new Date().toISOString(),
+      },
+    });
+
+    if (error) {
+      console.error("Error updating user metadata:", error);
+    } else {
+      setLoginRewardClaimed(true);
+      // The session will be updated automatically by the onAuthStateChange listener
+      // in AuthProvider, which will cause the b_coins in the TopBar to update.
+    }
+  };
+
   return (
     <div className="bg-gray-800 text-white min-h-screen p-4">
       <div className="max-w-7xl mx-auto">
@@ -32,7 +83,7 @@ const Inbox = () => {
                   <h2 className="text-xl font-bold">Login</h2>
                   <div className="flex items-center space-x-4 mt-2">
                     <div className="flex items-center">
-                      <img src="/A coins.png" alt="Coin" className="w-8 h-8" />
+                      <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
                       <div>
                         <p className="text-sm">Coin</p>
                         <p className="text-xs">x5</p>
@@ -41,7 +92,13 @@ const Inbox = () => {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <Button className="bg-blue-500 hover:bg-blue-600">GO</Button>
+                  <Button
+                    className="bg-blue-500 hover:bg-blue-600"
+                    onClick={handleClaimLoginReward}
+                    disabled={loginRewardClaimed}
+                  >
+                    {loginRewardClaimed ? "Claimed" : "Claim"}
+                  </Button>
                 </div>
               </div>
             </div>
