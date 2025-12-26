@@ -26,9 +26,9 @@ export function TopBar() {
   const displayInitial = displayName?.charAt(0).toUpperCase() || "U";
   const avatarUrl = user?.user_metadata?.avatar_url;
 
-  const a_coins = user?.user_metadata?.a_coins ?? 0;
-  const b_coins = user?.user_metadata?.b_coins ?? 0;
-  const p_coins = user?.user_metadata?.p_coins ?? 0;
+  const a_coins = user?.user_metadata?.coins?.a_coins ?? 0;
+  const b_coins = user?.user_metadata?.coins?.b_coins ?? 0;
+  const p_coins = user?.user_metadata?.coins?.p_coins ?? 0;
 
   return (
     <div className="bg-gray-900 text-white border-b">

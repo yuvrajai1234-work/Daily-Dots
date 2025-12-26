@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 const Inbox = () => {
   const { session } = useAuth();
   const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   const canClaimReward = () => {
     const lastClaim = session?.user?.user_metadata?.last_login_reward_claim;
@@ -30,26 +31,34 @@ const Inbox = () => {
   }, [session]);
 
   const handleClaimLoginReward = async () => {
-    if (!session || !canClaimReward()) return;
+    if (!session || !canClaimReward() || isClaiming) return;
 
+    setIsClaiming(true);
     const user = session.user;
-    const currentBCoins = user.user_metadata.b_coins || 0;
-    const rewardAmount = 5;
-    const newBCoins = currentBCoins + rewardAmount;
 
-    const { data, error } = await supabase.auth.updateUser({
-      data: {
-        b_coins: newBCoins,
+    const currentMetadata = user.user_metadata || {};
+    const currentCoins = currentMetadata.coins || {};
+    const rewardAmount = 5;
+
+    const newCoins = {
+        ...currentCoins,
+        b_coins: (currentCoins.b_coins || 0) + rewardAmount
+    };
+
+    const newMetadata = {
+        ...currentMetadata,
+        coins: newCoins,
         last_login_reward_claim: new Date().toISOString(),
-      },
-    });
+    };
+
+    const { error } = await supabase.auth.updateUser({ data: newMetadata });
+
+    setIsClaiming(false);
 
     if (error) {
       console.error("Error updating user metadata:", error);
     } else {
       setLoginRewardClaimed(true);
-      // The session will be updated automatically by the onAuthStateChange listener
-      // in AuthProvider, which will cause the b_coins in the TopBar to update.
     }
   };
 
@@ -95,9 +104,9 @@ const Inbox = () => {
                   <Button
                     className="bg-blue-500 hover:bg-blue-600"
                     onClick={handleClaimLoginReward}
-                    disabled={loginRewardClaimed}
+                    disabled={loginRewardClaimed || isClaiming}
                   >
-                    {loginRewardClaimed ? "Claimed" : "Claim"}
+                    {isClaiming ? "Claiming..." : loginRewardClaimed ? "Claimed" : "Claim"}
                   </Button>
                 </div>
               </div>
