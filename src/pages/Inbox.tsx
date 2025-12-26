@@ -8,13 +8,36 @@ import MiniSidebar from "@/components/MiniSidebar";
 
 const Inbox = () => {
   const { session } = useAuth();
-  const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
   const navigate = useNavigate();
   const [selectedView, setSelectedView] = useState<"quests" | "streak">("quests");
 
-  const canClaimReward = () => {
-    const lastClaim = session?.user?.user_metadata?.last_login_reward_claim;
+  // Quest states
+  const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
+  const [isClaimingLogin, setIsClaimingLogin] = useState(false);
+  const [habitCheckinRewardClaimed, setHabitCheckinRewardClaimed] = useState(false);
+  const [isClaimingHabitCheckin, setIsClaimingHabitCheckin] = useState(false);
+  const [isHabitCompletedToday, setIsHabitCompletedToday] = useState(false);
+
+  // Streak states
+  const [streak3DayRewardClaimed, setStreak3DayRewardClaimed] = useState(false);
+  const [isClaiming3DayStreak, setIsClaiming3DayStreak] = useState(false);
+  const [has3DayStreak, setHas3DayStreak] = useState(false);
+
+  const [streak7DayRewardClaimed, setStreak7DayRewardClaimed] = useState(false);
+  const [isClaiming7DayStreak, setIsClaiming7DayStreak] = useState(false);
+  const [has7DayStreak, setHas7DayStreak] = useState(false);
+
+  const [streak15DayRewardClaimed, setStreak15DayRewardClaimed] = useState(false);
+  const [isClaiming15DayStreak, setIsClaiming15DayStreak] = useState(false);
+  const [has15DayStreak, setHas15DayStreak] = useState(false);
+
+  const [streak30DayRewardClaimed, setStreak30DayRewardClaimed] = useState(false);
+  const [isClaiming30DayStreak, setIsClaiming30DayStreak] = useState(false);
+  const [has30DayStreak, setHas30DayStreak] = useState(false);
+
+  const canClaimDailyReward = (claimField: string) => {
+    if (!session?.user) return false;
+    const lastClaim = session.user.user_metadata?.[claimField];
     if (!lastClaim) {
       return true; // Never claimed before
     }
@@ -27,195 +50,218 @@ const Inbox = () => {
     );
   };
 
+  const canClaimOnetimeReward = (claimField: string) => {
+    if (!session?.user) return false;
+    return !session.user.user_metadata?.[claimField];
+  }
+
   useEffect(() => {
     if (session?.user) {
-      setLoginRewardClaimed(!canClaimReward());
+      setLoginRewardClaimed(!canClaimDailyReward("last_login_reward_claim"));
+      setHabitCheckinRewardClaimed(!canClaimDailyReward("last_habit_checkin_reward_claim"));
+      
+      setStreak3DayRewardClaimed(!canClaimOnetimeReward("last_3_day_streak_claim"));
+      setStreak7DayRewardClaimed(!canClaimOnetimeReward("last_7_day_streak_claim"));
+      setStreak15DayRewardClaimed(!canClaimOnetimeReward("last_15_day_streak_claim"));
+      setStreak30DayRewardClaimed(!canClaimOnetimeReward("last_30_day_streak_claim"));
+
+      // Simulate that the user has completed habits and streaks for demonstration
+      setIsHabitCompletedToday(true);
+      setHas3DayStreak(true);
+      setHas7DayStreak(true);
+      setHas15DayStreak(true);
+      setHas30DayStreak(true);
     }
   }, [session]);
 
-  const handleClaimLoginReward = async () => {
-    if (!session || !canClaimReward() || isClaiming) return;
-
+  const handleClaimReward = async (
+    setIsClaiming: (isClaiming: boolean) => void,
+    rewardAmount: number,
+    coinType: "b_coins" | "a_coins",
+    claimField: string,
+    setRewardClaimed: (claimed: boolean) => void
+  ) => {
+    if (!session) return;
     setIsClaiming(true);
-    const user = session.user;
 
+    const user = session.user;
     const currentMetadata = user.user_metadata || {};
     const currentCoins = currentMetadata.coins || {};
-    const rewardAmount = 5;
-
+    
     const newCoins = {
       ...currentCoins,
-      b_coins: (currentCoins.b_coins || 0) + rewardAmount,
+      [coinType]: (currentCoins[coinType] || 0) + rewardAmount,
     };
 
     const newMetadata = {
       ...currentMetadata,
       coins: newCoins,
-      last_login_reward_claim: new Date().toISOString(),
+      [claimField]: new Date().toISOString(),
     };
 
     const { error } = await supabase.auth.updateUser({ data: newMetadata });
 
     setIsClaiming(false);
-
     if (error) {
-      console.error("Error updating user metadata:", error);
+      console.error(`Error updating user metadata for ${claimField}:`, error);
     } else {
-      setLoginRewardClaimed(true);
+      setRewardClaimed(true);
     }
   };
 
   const renderQuestsContent = () => (
     <>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">Login</h2>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x5</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">Login</h2>
+          <div className="flex items-center mt-2">
+            <img src="/B coins.png" alt="Build Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Build Coin</p>
+              <p className="text-xs">x5</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleClaimLoginReward} disabled={loginRewardClaimed || isClaiming}>
-            {isClaiming ? "Claiming..." : loginRewardClaimed ? "Claimed" : "Claim"}
-          </Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaimingLogin, 5, "b_coins", "last_login_reward_claim", setLoginRewardClaimed)}
+          disabled={loginRewardClaimed || isClaimingLogin}
+        >
+          {isClaimingLogin ? "Claiming..." : loginRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">AI Companion</h2>
-            <p className="text-sm text-gray-400">Chat with the AI Assistant for a daily tip.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x2</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">AI Companion</h2>
+          <p className="text-sm text-gray-400">Chat with the AI Assistant for a daily tip.</p>
+          <div className="flex items-center mt-2">
+            <img src="/B coins.png" alt="Build Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Build Coin</p>
+              <p className="text-xs">x2</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/ai-assistant")}>GO</Button>
         </div>
+        <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/ai-assistant")}>GO</Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">Community Post</h2>
-            <p className="text-sm text-gray-400">Share a reflection with the community.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x3</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">Community Post</h2>
+          <p className="text-sm text-gray-400">Share a reflection with the community.</p>
+          <div className="flex items-center mt-2">
+            <img src="/B coins.png" alt="Build Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Build Coin</p>
+              <p className="text-xs">x3</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/community")}>GO</Button>
         </div>
+        <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/community")}>GO</Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">Habit Check-in</h2>
-            <p className="text-sm text-gray-400">Complete a daily habit.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x10</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">Habit Check-in</h2>
+          <p className="text-sm text-gray-400">Complete a daily habit.</p>
+          <div className="flex items-center mt-2">
+            <img src="/B coins.png" alt="Build Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Build Coin</p>
+              <p className="text-xs">x10</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaimingHabitCheckin, 10, "b_coins", "last_habit_checkin_reward_claim", setHabitCheckinRewardClaimed)}
+          disabled={!isHabitCompletedToday || habitCheckinRewardClaimed || isClaimingHabitCheckin}
+        >
+          {isClaimingHabitCheckin ? "Claiming..." : habitCheckinRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
     </>
   );
 
   const renderStreakContent = () => (
     <>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">3-Day Streak Bonus</h2>
-            <p className="text-sm text-gray-400">Maintain a 3-day habit streak.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x5</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">3-Day Streak Bonus</h2>
+          <p className="text-sm text-gray-400">Maintain a 3-day habit streak.</p>
+          <div className="flex items-center mt-2">
+            <img src="/A coins.png" alt="Achievement Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Achievement Coin</p>
+              <p className="text-xs">x5</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaiming3DayStreak, 5, "a_coins", "last_3_day_streak_claim", setStreak3DayRewardClaimed)}
+          disabled={!has3DayStreak || streak3DayRewardClaimed || isClaiming3DayStreak}
+        >
+          {isClaiming3DayStreak ? "Claiming..." : streak3DayRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">7-Day Streak Bonus</h2>
-            <p className="text-sm text-gray-400">Maintain a 7-day habit streak.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x10</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">7-Day Streak Bonus</h2>
+          <p className="text-sm text-gray-400">Maintain a 7-day habit streak.</p>
+          <div className="flex items-center mt-2">
+            <img src="/A coins.png" alt="Achievement Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Achievement Coin</p>
+              <p className="text-xs">x10</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaiming7DayStreak, 10, "a_coins", "last_7_day_streak_claim", setStreak7DayRewardClaimed)}
+          disabled={!has7DayStreak || streak7DayRewardClaimed || isClaiming7DayStreak}
+        >
+          {isClaiming7DayStreak ? "Claiming..." : streak7DayRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">15-Day Streak Bonus</h2>
-            <p className="text-sm text-gray-400">Maintain a 15-day habit streak.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x25</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">15-Day Streak Bonus</h2>
+          <p className="text-sm text-gray-400">Maintain a 15-day habit streak.</p>
+          <div className="flex items-center mt-2">
+            <img src="/A coins.png" alt="Achievement Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Achievement Coin</p>
+              <p className="text-xs">x25</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaiming15DayStreak, 25, "a_coins", "last_15_day_streak_claim", setStreak15DayRewardClaimed)}
+          disabled={!has15DayStreak || streak15DayRewardClaimed || isClaiming15DayStreak}
+        >
+          {isClaiming15DayStreak ? "Claiming..." : streak15DayRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
-      <div className="bg-gray-900 p-4 rounded-md">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">30-Day Streak Bonus</h2>
-            <p className="text-sm text-gray-400">Maintain a 30-day habit streak.</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <img src="/B coins.png" alt="Coin" className="w-8 h-8" />
-                <div>
-                  <p className="text-sm">Build Coin</p>
-                  <p className="text-xs">x50</p>
-                </div>
-              </div>
+      <div className="bg-gray-900 p-4 rounded-md flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">30-Day Streak Bonus</h2>
+          <p className="text-sm text-gray-400">Maintain a 30-day habit streak.</p>
+          <div className="flex items-center mt-2">
+            <img src="/A coins.png" alt="Achievement Coin" className="w-8 h-8 mr-2" />
+            <div>
+              <p className="text-sm">Achievement Coin</p>
+              <p className="text-xs">x50</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
         </div>
+        <Button
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={() => handleClaimReward(setIsClaiming30DayStreak, 50, "a_coins", "last_30_day_streak_claim", setStreak30DayRewardClaimed)}
+          disabled={!has30DayStreak || streak30DayRewardClaimed || isClaiming30DayStreak}
+        >
+          {isClaiming30DayStreak ? "Claiming..." : streak30DayRewardClaimed ? "Claimed" : "Claim"}
+        </Button>
       </div>
     </>
   );
