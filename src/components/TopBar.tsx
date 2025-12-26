@@ -10,13 +10,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useNotification } from "@/contexts/NotificationContext";
 
 export function TopBar() {
   const { session } = useAuth();
   const { isSidebarCollapsed } = useSidebar();
+  const { notificationCount } = useNotification();
   const user = session?.user;
-  const [completedQuests, setCompletedQuests] = useState(4); // Example state
 
   const displayName =
     user?.user_metadata?.name ||
@@ -50,10 +50,28 @@ export function TopBar() {
           <div className="flex items-center space-x-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  <img src="/A coins.png" alt="Coins" className="w-6 h-6" />
-                  <span className="ml-2">{a_coins}</span>
-                </div>
+                <Link to="/earn-coins" className="relative">
+                  <div className="flex items-center">
+                    <img src="/A coins.png" alt="Coins" className="w-6 h-6" />
+                    <span className="ml-2">{a_coins}</span>
+                    <div className="absolute -bottom-1 -left-1 bg-gray-800 rounded-full">
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>A coins</p>
@@ -61,10 +79,28 @@ export function TopBar() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  <img src="/B coins.png" alt="Gems" className="w-6 h-6" />
-                  <span className="ml-2">{b_coins}</span>
-                </div>
+                <Link to="/earn-coins" className="relative">
+                  <div className="flex items-center">
+                    <img src="/B coins.png" alt="Gems" className="w-6 h-6" />
+                    <span className="ml-2">{b_coins}</span>
+                    <div className="absolute -bottom-1 -left-1 bg-gray-800 rounded-full">
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>B coins</p>
@@ -72,10 +108,28 @@ export function TopBar() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  <img src="/P coins.png" alt="Shield" className="w-6 h-6" />
-                  <span className="ml-2">{p_coins}</span>
-                </div>
+                <Link to="/earn-coins" className="relative">
+                  <div className="flex items-center">
+                    <img src="/P coins.png" alt="Shield" className="w-6 h-6" />
+                    <span className="ml-2">{p_coins}</span>
+                    <div className="absolute -bottom-1 -left-1 bg-gray-800 rounded-full">
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>P coins</p>
@@ -93,9 +147,9 @@ export function TopBar() {
                 <span role="img" aria-label="Inbox">
                   🔔
                 </span>
-                {completedQuests > 0 && (
+                {notificationCount > 0 && (
                   <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
-                    {completedQuests}
+                    {notificationCount}
                   </span>
                 )}
               </Button>

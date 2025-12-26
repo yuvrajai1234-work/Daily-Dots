@@ -5,10 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MiniSidebar from "@/components/MiniSidebar";
+import { useNotification } from "@/contexts/NotificationContext";
 
 const Inbox = () => {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { setNotificationCount } = useNotification();
   const [selectedView, setSelectedView] = useState<"quests" | "streak">("quests");
 
   // Quest states
@@ -37,6 +39,10 @@ const Inbox = () => {
   const [streak30DayRewardClaimed, setStreak30DayRewardClaimed] = useState(false);
   const [isClaiming30DayStreak, setIsClaiming30DayStreak] = useState(false);
   const [has30DayStreak, setHas30DayStreak] = useState(false);
+
+  // Progress and Expiration states
+  const [progress, setProgress] = useState({ claimed: 0, total: 0 });
+  const [expirationText, setExpirationText] = useState("");
 
   const canClaimDailyReward = (claimField: string) => {
     if (!session?.user) return false;
@@ -68,16 +74,92 @@ const Inbox = () => {
       setStreak15DayRewardClaimed(!canClaimOnetimeReward("last_15_day_streak_claim"));
       setStreak30DayRewardClaimed(!canClaimOnetimeReward("last_30_day_streak_claim"));
 
-      // Simulate that the user has completed habits for demonstration
       setIsHabitCompletedToday(true);
 
-      // Set streak completion status based on current streak
       setHas3DayStreak(currentStreak >= 3);
       setHas7DayStreak(currentStreak >= 7);
       setHas15DayStreak(currentStreak >= 15);
       setHas30DayStreak(currentStreak >= 30);
     }
   }, [session, currentStreak]);
+
+  useEffect(() => {
+    let claimableQuests = 0;
+    if (canClaimDailyReward('last_login_reward_claim')) claimableQuests++;
+    if (canClaimDailyReward('last_habit_checkin_reward_claim') && isHabitCompletedToday) claimableQuests++;
+
+    let claimableStreaks = 0;
+    if (has3DayStreak && canClaimOnetimeReward('last_3_day_streak_claim')) claimableStreaks++;
+    if (has7DayStreak && canClaimOnetimeReward('last_7_day_streak_claim')) claimableStreaks++;
+    if (has15DayStreak && canClaimOnetimeReward('last_15_day_streak_claim')) claimableStreaks++;
+    if (has30DayStreak && canClaimOnetimeReward('last_30_day_streak_claim')) claimableStreaks++;
+
+    setNotificationCount(claimableQuests + claimableStreaks);
+  }, [session, loginRewardClaimed, habitCheckinRewardClaimed, isHabitCompletedToday, has3DayStreak, streak3DayRewardClaimed, has7DayStreak, streak7DayRewardClaimed, has15DayStreak, streak15DayRewardClaimed, has30DayStreak, streak30DayRewardClaimed]);
+
+
+  useEffect(() => {
+    let claimed = 0;
+    let total = 0;
+
+    if (selectedView === "quests") {
+      total = 2; // Login, Habit Check-in
+      if (loginRewardClaimed) claimed++;
+      if (habitCheckinRewardClaimed) claimed++;
+    } else if (selectedView === "streak") {
+      total = 4; // 3, 7, 15, 30-day streaks
+      if (streak3DayRewardClaimed) claimed++;
+      if (streak7DayRewardClaimed) claimed++;
+      if (streak15DayRewardClaimed) claimed++;
+      if (streak30DayRewardClaimed) claimed++;
+    }
+
+    setProgress({ claimed, total });
+  }, [
+    selectedView,
+    loginRewardClaimed,
+    habitCheckinRewardClaimed,
+    streak3DayRewardClaimed,
+    streak7DayRewardClaimed,
+    streak15DayRewardClaimed,
+    streak30DayRewardClaimed,
+  ]);
+
+  useEffect(() => {
+    const calculateQuestExpiration = () => {
+      const now = new Date();
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      const diff = endOfDay.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      return `Expires in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const calculateStreakExpiration = () => {
+      const now = new Date();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const diffTime = endOfMonth.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return `Expires in: ${diffDays} Days`;
+    };
+
+    let intervalId: number;
+
+    const updateTimer = () => {
+      if (selectedView === 'quests') {
+        setExpirationText(calculateQuestExpiration());
+      } else {
+        setExpirationText(calculateStreakExpiration());
+      }
+    };
+
+    updateTimer();
+    intervalId = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [selectedView]);
 
   const handleClaimReward = async (
     setIsClaiming: (isClaiming: boolean) => void,
@@ -212,7 +294,7 @@ const Inbox = () => {
           </Button>
         )}
       </div>
-      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
+      <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center.">
         <div>
           <h2 className="text-xl font-bold">7-Day Streak Bonus</h2>
           <p className="text-sm text-gray-400">Maintain a 7-day habit streak.</p>
@@ -295,16 +377,19 @@ const Inbox = () => {
           <div className="bg-gray-900 p-2 rounded-md">
             <div className="flex items-center justify-between">
               <span className="text-sm">PROGRESS</span>
-              <span className="text-sm">0/8</span>
+              <span className="text-sm">{progress.claimed}/{progress.total}</span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2.5 my-1">
-              <div className="bg-green-500 h-2.5 rounded-full w-0"></div>
+              <div
+                className="bg-green-500 h-2.5 rounded-full"
+                style={{ width: `${progress.total > 0 ? (progress.claimed / progress.total) * 100 : 0}%` }}
+              ></div>
             </div>
             <div className="flex items-center text-xs text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clipRule="evenodd" />
               </svg>
-              Expires in: 14 Days
+              {expirationText}
             </div>
           </div>
         </div>
