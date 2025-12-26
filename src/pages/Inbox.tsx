@@ -18,6 +18,9 @@ const Inbox = () => {
   const [isClaimingHabitCheckin, setIsClaimingHabitCheckin] = useState(false);
   const [isHabitCompletedToday, setIsHabitCompletedToday] = useState(false);
 
+  // This should be updated from your backend or state management
+  const [currentStreak, setCurrentStreak] = useState(2);
+
   // Streak states
   const [streak3DayRewardClaimed, setStreak3DayRewardClaimed] = useState(false);
   const [isClaiming3DayStreak, setIsClaiming3DayStreak] = useState(false);
@@ -65,14 +68,16 @@ const Inbox = () => {
       setStreak15DayRewardClaimed(!canClaimOnetimeReward("last_15_day_streak_claim"));
       setStreak30DayRewardClaimed(!canClaimOnetimeReward("last_30_day_streak_claim"));
 
-      // Simulate that the user has completed habits and streaks for demonstration
+      // Simulate that the user has completed habits for demonstration
       setIsHabitCompletedToday(true);
-      setHas3DayStreak(true);
-      setHas7DayStreak(true);
-      setHas15DayStreak(true);
-      setHas30DayStreak(true);
+
+      // Set streak completion status based on current streak
+      setHas3DayStreak(currentStreak >= 3);
+      setHas7DayStreak(currentStreak >= 7);
+      setHas15DayStreak(currentStreak >= 15);
+      setHas30DayStreak(currentStreak >= 30);
     }
-  }, [session]);
+  }, [session, currentStreak]);
 
   const handleClaimReward = async (
     setIsClaiming: (isClaiming: boolean) => void,
@@ -195,13 +200,17 @@ const Inbox = () => {
             </div>
           </div>
         </div>
-        <Button
-          className="bg-blue-500 hover:bg-blue-600"
-          onClick={() => handleClaimReward(setIsClaiming3DayStreak, 5, "a_coins", "last_3_day_streak_claim", setStreak3DayRewardClaimed)}
-          disabled={!has3DayStreak || streak3DayRewardClaimed || isClaiming3DayStreak}
-        >
-          {isClaiming3DayStreak ? "Claiming..." : streak3DayRewardClaimed ? "Claimed" : "Claim"}
-        </Button>
+        {!has3DayStreak ? (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
+        ) : (
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => handleClaimReward(setIsClaiming3DayStreak, 5, "a_coins", "last_3_day_streak_claim", setStreak3DayRewardClaimed)}
+            disabled={streak3DayRewardClaimed || isClaiming3DayStreak}
+          >
+            {isClaiming3DayStreak ? "Claiming..." : streak3DayRewardClaimed ? "Claimed" : "Claim"}
+          </Button>
+        )}
       </div>
       <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
         <div>
@@ -215,13 +224,17 @@ const Inbox = () => {
             </div>
           </div>
         </div>
-        <Button
-          className="bg-blue-500 hover:bg-blue-600"
-          onClick={() => handleClaimReward(setIsClaiming7DayStreak, 10, "a_coins", "last_7_day_streak_claim", setStreak7DayRewardClaimed)}
-          disabled={!has7DayStreak || streak7DayRewardClaimed || isClaiming7DayStreak}
-        >
-          {isClaiming7DayStreak ? "Claiming..." : streak7DayRewardClaimed ? "Claimed" : "Claim"}
-        </Button>
+        {!has7DayStreak ? (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
+        ) : (
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => handleClaimReward(setIsClaiming7DayStreak, 10, "a_coins", "last_7_day_streak_claim", setStreak7DayRewardClaimed)}
+            disabled={streak7DayRewardClaimed || isClaiming7DayStreak}
+          >
+            {isClaiming7DayStreak ? "Claiming..." : streak7DayRewardClaimed ? "Claimed" : "Claim"}
+          </Button>
+        )}
       </div>
       <div className="bg-gray-900 p-4 rounded-md mb-4 flex justify-between items-center">
         <div>
@@ -235,13 +248,17 @@ const Inbox = () => {
             </div>
           </div>
         </div>
-        <Button
-          className="bg-blue-500 hover:bg-blue-600"
-          onClick={() => handleClaimReward(setIsClaiming15DayStreak, 25, "a_coins", "last_15_day_streak_claim", setStreak15DayRewardClaimed)}
-          disabled={!has15DayStreak || streak15DayRewardClaimed || isClaiming15DayStreak}
-        >
-          {isClaiming15DayStreak ? "Claiming..." : streak15DayRewardClaimed ? "Claimed" : "Claim"}
-        </Button>
+        {!has15DayStreak ? (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
+        ) : (
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => handleClaimReward(setIsClaiming15DayStreak, 25, "a_coins", "last_15_day_streak_claim", setStreak15DayRewardClaimed)}
+            disabled={streak15DayRewardClaimed || isClaiming15DayStreak}
+          >
+            {isClaiming15DayStreak ? "Claiming..." : streak15DayRewardClaimed ? "Claimed" : "Claim"}
+          </Button>
+        )}
       </div>
       <div className="bg-gray-900 p-4 rounded-md flex justify-between items-center">
         <div>
@@ -255,13 +272,17 @@ const Inbox = () => {
             </div>
           </div>
         </div>
-        <Button
-          className="bg-blue-500 hover:bg-blue-600"
-          onClick={() => handleClaimReward(setIsClaiming30DayStreak, 50, "a_coins", "last_30_day_streak_claim", setStreak30DayRewardClaimed)}
-          disabled={!has30DayStreak || streak30DayRewardClaimed || isClaiming30DayStreak}
-        >
-          {isClaiming30DayStreak ? "Claiming..." : streak30DayRewardClaimed ? "Claimed" : "Claim"}
-        </Button>
+        {!has30DayStreak ? (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate("/dashboard")}>GO</Button>
+        ) : (
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => handleClaimReward(setIsClaiming30DayStreak, 50, "a_coins", "last_30_day_streak_claim", setStreak30DayRewardClaimed)}
+            disabled={streak30DayRewardClaimed || isClaiming30DayStreak}
+          >
+            {isClaiming30DayStreak ? "Claiming..." : streak30DayRewardClaimed ? "Claimed" : "Claim"}
+          </Button>
+        )}
       </div>
     </>
   );
@@ -318,7 +339,7 @@ const Inbox = () => {
               </div>
             </div>
             <Button className="w-full mt-6 bg-gray-700 hover:bg-gray-600" disabled>CLAIM</Button>
-          </div>
+            </div>
         </div>
       </div>
     </div>
