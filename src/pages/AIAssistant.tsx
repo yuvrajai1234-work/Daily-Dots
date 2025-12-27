@@ -1,36 +1,46 @@
+
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const AIAssistant = () => {
+  const { session } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!prompt.trim()) return;
     setLoading(true);
     setResponse("");
-
     try {
-      const res = await fetch("http://127.0.0.1:5001/daily-dotsgit-51641858-117c4/us-central1/askAIAssistant", {
+      const res = await fetch("https://us-central1-daily-dots.cloudfunctions.net/askAIAssistant", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: prompt }),
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
       const data = await res.json();
-      setResponse(data.response);
+      setResponse(data.text);
+
+      if (session) {
+        const today = new Date().toISOString().slice(0, 10);
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            ...session.user.user_metadata,
+            ai_quest_completed_on: today,
+          },
+        });
+        if (error) {
+          console.error("Error updating user metadata for AI quest:", error);
+        }
+      }
     } catch (error) {
-      console.error("Error calling AI assistant:", error);
-      setResponse("Sorry, something went wrong.");
+      console.error("Error asking AI assistant:", error);
+      setResponse("Sorry, something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

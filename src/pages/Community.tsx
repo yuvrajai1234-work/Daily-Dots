@@ -1,136 +1,133 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, Users, ArrowRight, ArrowLeft, MessageSquare, ThumbsUp, Zap } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
-const CommunityPage = () => {
-  const [selectedGroup, setSelectedGroup] = useState(null);
+const Community = () => {
+  const { session } = useAuth();
+  const [reflections, setReflections] = useState<any[]>([]);
+  const [newReflection, setNewReflection] = useState("");
+  const [page, setPage] = useState(1);
+  const reflectionsPerPage = 5;
 
-  // Mock data
-  const userGroups = [
-    { id: 1, name: "Study Group", membersCount: 12 },
-    { id: 2, name: "Accountability Squad", membersCount: 5 },
-    { id: 3, name: "Morning Risers", membersCount: 23 },
-  ];
+  const fetchReflections = async () => {
+    const { data, error } = await supabase
+      .from("journal_entries")
+      .select("*, user:profiles(*)")
+      .order("created_at", { ascending: false })
+      .range((page - 1) * reflectionsPerPage, page * reflectionsPerPage - 1);
+    if (error) console.error("Error fetching reflections:", error);
+    else setReflections(data);
+  };
 
-  const groupMembers = [
-    { id: 1, name: "Alice", score: 1250, streak: 15, mostImproved: true, avatar: "/avatars/01.png" },
-    { id: 2, name: "Bob", score: 1100, streak: 12, mostImproved: false, avatar: "/avatars/02.png" },
-    { id: 3, name: "You", score: 1050, streak: 10, mostImproved: false, avatar: "/avatars/03.png" },
-    { id: 4, name: "Charlie", score: 900, streak: 8, mostImproved: false, avatar: "/avatars/04.png" },
-  ];
+  useEffect(() => {
+    fetchReflections();
+  }, [page]);
 
-  if (selectedGroup) {
-    return (
-      <div className="p-4 md:p-8 space-y-6">
-        <Button variant="outline" onClick={() => setSelectedGroup(null)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to all groups
-        </Button>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold tracking-tight">{selectedGroup.name}</CardTitle>
-            <CardDescription>This is your group's space. See how everyone is doing and send some encouragement!</CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Leaderboard</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Rank</TableHead>
-                  <TableHead>Member</TableHead>
-                  <TableHead className="text-right">Score</TableHead>
-                  <TableHead className="text-right">Streak</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupMembers.map((member, index) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                          <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{member.name}</span>
-                        {member.mostImproved && <Badge variant="outline" className="border-yellow-500 text-yellow-500">Most Improved</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">{member.score}</TableCell>
-                    <TableCell className="text-right">{member.streak} days</TableCell>
-                    <TableCell className="text-center">
-                        <div className="flex justify-center gap-1">
-                            <Button variant="ghost" size="icon"><MessageSquare className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon"><Zap className="h-4 w-4" /></Button>
-                        </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleShare = async () => {
+    if (!newReflection.trim() || !session) return;
+
+    const { error } = await supabase.from("journal_entries").insert([
+      {
+        content: newReflection,
+        user_id: session.user.id,
+      },
+    ]);
+
+    if (error) {
+      console.error("Error sharing reflection:", error);
+    } else {
+      setNewReflection("");
+      fetchReflections(); // Refresh reflections after sharing
+
+      const today = new Date().toISOString().slice(0, 10);
+      const { error: userError } = await supabase.auth.updateUser({
+        data: {
+          ...session.user.user_metadata,
+          community_post_completed_on: today,
+        },
+      });
+      if (userError) {
+        console.error("Error updating user metadata for community quest:", userError);
+      }
+    }
+  };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <Card>
+    <div className="p-4">
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Community Spaces</CardTitle>
-          <CardDescription>Create or join groups to share your progress and stay motivated with others.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col md:flex-row gap-4">
-          <Button className="w-full md:w-auto">
-            <Plus className="mr-2 h-4 w-4" /> Create a new group
-          </Button>
-          <Button variant="outline" className="w-full md:w-auto">
-            Join a group
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Groups</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {userGroups.map((group) => (
-            <div key={group.id} className="flex items-center justify-between p-4 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setSelectedGroup(group)}>
-              <div>
-                <p className="font-semibold">{group.name}</p>
-                <p className="text-sm text-muted-foreground flex items-center">
-                  <Users className="mr-2 h-4 w-4" /> {group.membersCount} members
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-            <CardTitle>Your Shareable Stats</CardTitle>
-            <CardDescription>Control what statistics you share with your groups from your profile settings.</CardDescription>
+          <CardTitle>Share a Reflection</CardTitle>
         </CardHeader>
         <CardContent>
-            <p className="text-muted-foreground">You can configure your privacy settings on your profile page. More stats coming soon!</p>
+          <Textarea
+            value={newReflection}
+            onChange={(e) => setNewReflection(e.target.value)}
+            placeholder="What's on your mind today?"
+            className="mb-4"
+          />
         </CardContent>
+        <CardFooter>
+          <Button onClick={handleShare}>Share</Button>
+        </CardFooter>
       </Card>
+
+      <div className="space-y-4">
+        {reflections.map((reflection) => (
+          <Card key={reflection.id}>
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <Avatar>
+                  <AvatarImage src={reflection.user.avatar_url} />
+                  <AvatarFallback>{reflection.user.full_name?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{reflection.user.full_name || "Anonymous"}</p>
+                  <p className="text-sm text-gray-500">{new Date(reflection.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p>{reflection.content}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Pagination className="mt-6">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setPage(p => Math.max(1, p - 1));
+              }}
+              className={page === 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#">{page}</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                // This is a simplification. A robust implementation would check if there are more pages.
+                setPage(p => p + 1);
+              }}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
 
-export default CommunityPage;
+export default Community;

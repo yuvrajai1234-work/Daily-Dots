@@ -94,24 +94,66 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [selectedColor, setSelectedColor] = useState('#8884d8');
 
-  const processData = useCallback((completions, habits) => {
+  const fetchData = useCallback(async () => {
+    if (!session) return;
+
+    // Fetch all completions for the user
+    const { data: completions, error: completionsError } = await supabase
+      .from('habit_completions')
+      .select('completion_date, effort_level, habit_id')
+      .eq('user_id', session.user.id);
+
+    if (completionsError) {
+      console.error('Error fetching habit completions:', completionsError);
+      return;
+    }
+
+    // Fetch all active habits for the user
+    const { data: habits, error: habitsError } = await supabase
+      .from('habits')
+      .select('id, name, icon, color, created_at, user_id, is_archived')
+      .eq('user_id', session.user.id)
+      .eq('is_archived', false);
+
+    if (habitsError) {
+      console.error('Error fetching habits:', habitsError);
+      return;
+    }
+
+    // --- Start of integrated processing logic ---
+
+    // Calculate Today's Score
     const today = new Date().toISOString().slice(0, 10);
     const todayCompletions = completions.filter(c => c.completion_date === today);
     const todayScore = todayCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
+    // Calculate Current Streak
     const completionDates = new Set(completions.map(c => c.completion_date));
     let currentStreak = 0;
     let checkDate = new Date();
     
+    // If there's no completion for today, start checking from yesterday
     if (!completionDates.has(checkDate.toISOString().slice(0, 10))) {
         checkDate.setDate(checkDate.getDate() - 1);
     }
 
+    // Count consecutive days with completions
     while (completionDates.has(checkDate.toISOString().slice(0, 10))) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
     }
+    
+    // *** THIS IS THE FIX: Update user metadata with the new streak ***
+    const { data: user, error: userError } = await supabase.auth.updateUser({
+        data: { ...session.user.user_metadata, streak: currentStreak }
+    });
 
+    if (userError) {
+        console.error('Error updating user streak:', userError);
+    }
+
+
+    // Calculate Cycle Score (Current Week)
     const todayDate = new Date();
     const dayOfWeek = todayDate.getDay();
     const startOfWeek = new Date(todayDate);
@@ -125,6 +167,7 @@ const Dashboard = () => {
     const currentWeekCompletions = completions.filter(c => datesOfWeek.includes(c.completion_date));
     const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
+    // Calculate Improvement vs. Last Week
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
     const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
@@ -142,16 +185,16 @@ const Dashboard = () => {
 
     const overallCompletionRate = totalM_current_week > 0 ? (cycleScore / totalM_current_week) * 100 : 0;
     const overallCompletionRate_prev_week = totalM_prev_week > 0 ? (lastWeekScore / totalM_prev_week) * 100 : 0;
-
-    const improvement = overallCompletionRate - overallCompletionRate_prev_week;
+    const improvement = Math.round(overallCompletionRate - overallCompletionRate_prev_week);
 
     setStats({
-      todayScore: todayScore,
-      currentStreak: currentStreak,
-      cycleScore: cycleScore,
-      improvement: Math.round(improvement),
+      todayScore,
+      currentStreak,
+      cycleScore,
+      improvement,
     });
 
+    // Generate data for the 7-day progress chart
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const newChartData = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
@@ -161,9 +204,44 @@ const Dashboard = () => {
         const score = completions.filter(c => c.completion_date === dayStr).reduce((acc, curr) => acc + curr.effort_level, 0);
         return { day: dayName, score };
     });
-
     setChartData(newChartData);
-  }, []);
+
+    // Process habits to include their individual history and completion status for today
+    const habitsWithCompletionStatus = habits.map(habit => {
+        const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+        const todayCompletion = habitCompletions.find(c => c.completion_date === today);
+
+        // Individual habit improvement calculation
+        const currentWeekHabitCompletions = habitCompletions.filter(c => datesOfWeek.includes(c.completion_date));
+        const cycleScoreHabit = currentWeekHabitCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+        const lastWeekHabitCompletions = habitCompletions.filter(c => datesOfLastWeek.includes(c.completion_date));
+        const lastWeekScoreHabit = lastWeekHabitCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
+        const overallCompletionRateHabit = M_per_habit > 0 ? (cycleScoreHabit / M_per_habit) * 100 : 0;
+        const overallCompletionRateHabit_prev_week = M_per_habit > 0 ? (lastWeekScoreHabit / M_per_habit) * 100 : 0;
+        const improvementHabit = Math.round(overallCompletionRateHabit - overallCompletionRateHabit_prev_week);
+
+        const history = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            const dayStr = date.toISOString().slice(0, 10);
+            const dayName = days[date.getDay()];
+            const completion = habitCompletions.find(c => c.completion_date === dayStr);
+            return { day: dayName, score: completion ? completion.effort_level : 0 };
+        });
+
+        return {
+            ...habit,
+            completed: !!todayCompletion,
+            effortLevel: todayCompletion ? todayCompletion.effort_level : 0,
+            history,
+            improvement: improvementHabit,
+        };
+    });
+    setHabits(habitsWithCompletionStatus);
+
+    // --- End of integrated processing logic ---
+
+  }, [session]);
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -191,89 +269,7 @@ const Dashboard = () => {
 
     return () => clearInterval(intervalId);
   }, [session]);
-
-  const fetchData = useCallback(async () => {
-    if (!session) return;
-
-    const { data: completions, error } = await supabase
-      .from('habit_completions')
-      .select('completion_date, effort_level, habit_id')
-      .eq('user_id', session.user.id);
-
-    if (error) {
-      console.error('Error fetching habit completions:', error);
-      return;
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const { data: habits, error: habitsError } = await supabase
-      .from('habits')
-      .select('id, name, icon, color, created_at, user_id, is_archived, habit_completions (id, completion_date, effort_level)')
-      .eq('user_id', session.user.id)
-      .eq('habit_completions.completion_date', today)
-      .eq('is_archived', false);
-
-    if (habitsError) {
-      console.error('Error fetching habits:', habitsError);
-    } else {
-        const habitsWithCompletionStatus = habits.map(habit => {
-        const habitCompletions = completions.filter(c => c.habit_id === habit.id);
-
-        // Improvement calculation
-        const todayDate = new Date();
-        const dayOfWeek = todayDate.getDay();
-        const startOfWeek = new Date(todayDate);
-        startOfWeek.setDate(todayDate.getDate() - dayOfWeek);
-
-        const datesOfWeek = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(startOfWeek);
-            date.setDate(startOfWeek.getDate() + i);
-            return date.toISOString().slice(0, 10);
-        });
-        const currentWeekCompletions = habitCompletions.filter(c => datesOfWeek.includes(c.completion_date));
-        const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
-
-        const startOfLastWeek = new Date(startOfWeek);
-        startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
-        const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(startOfLastWeek);
-            date.setDate(startOfLastWeek.getDate() + i);
-            return date.toISOString().slice(0, 10);
-        });
-        const lastWeekCompletions = habitCompletions.filter(c => datesOfLastWeek.includes(c.completion_date));
-        const lastWeekScore = lastWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
-
-        const T = 7;
-        const M_per_habit = 4 * T;
-
-        const overallCompletionRate = M_per_habit > 0 ? (cycleScore / M_per_habit) * 100 : 0;
-        const overallCompletionRate_prev_week = M_per_habit > 0 ? (lastWeekScore / M_per_habit) * 100 : 0;
-
-        const improvement = Math.round(overallCompletionRate - overallCompletionRate_prev_week);
-
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const history = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - i));
-            const dayStr = date.toISOString().slice(0, 10);
-            const dayName = days[date.getDay()];
-            const completion = habitCompletions.find(c => c.completion_date === dayStr);
-            return { day: dayName, score: completion ? completion.effort_level : 0 };
-        });
-
-        return {
-            ...habit,
-            completed: habit.habit_completions.length > 0,
-            effortLevel: habit.habit_completions.length > 0 ? habit.habit_completions[0].effort_level : 0,
-            history,
-            improvement, // new prop
-        };
-        });
-      setHabits(habitsWithCompletionStatus);
-      processData(completions, habitsWithCompletionStatus);
-    }
-  }, [session, processData]);
-
+  
   useEffect(() => {
     if (session) {
       fetchData();
