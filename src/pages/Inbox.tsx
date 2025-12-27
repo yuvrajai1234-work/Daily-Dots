@@ -302,16 +302,25 @@ const Inbox = () => {
         <div className="flex gap-4">
           <MiniSidebar selectedView={selectedView} setSelectedView={setSelectedView} />
           <div className="flex-1">{selectedView === "quests" ? renderQuestsContent() : renderStreakContent()}</div>
+          {selectedView === 'quests' ? (
           <div className="bg-gray-900 p-4 rounded-md w-96">
             <h2 className="text-xl font-bold mb-4">REWARDS</h2>
             <div className="space-y-4">
-              <div className="flex items-center"><img src="https://i.imgur.com/eZcRNL0.png" alt="Captain Power" className="w-12 h-12" /><div className="ml-4"><p>CAPTAIN POWER</p></div></div>
-              <div className="flex items-center"><img src="https://i.imgur.com/pRiVEeA.png" alt="Captains Pass Point" className="w-12 h-12" /><div className="ml-4"><p>Captains Pass Point</p><p className="text-xs">x1,000</p></div></div>
-              <div className="flex items-center"><img src="https://i.imgur.com/sC9aG1s.png" alt="Captains Point" className="w-12 h-12" /><div className="ml-4">
-              <p>Captains Point</p><p className="text-xs">x50</p></div></div>
+              <div className="flex items-center"><img src="/B coins.png" alt="Build Coins" className="w-12 h-12" /><div className="ml-4"><p>Build Coins</p><p className="text-xs">x10</p></div></div>
+              <div className="flex items-center"><img src="/A coins.png" alt="Achievement Coins" className="w-12 h-12" /><div className="ml-4"><p>Achievement Coins</p><p className="text-xs">x5</p></div></div>
             </div>
             <Button className="w-full mt-6 bg-gray-700 hover:bg-gray-600" disabled>CLAIM</Button>
           </div>
+          ) : (
+          <div className="bg-gray-900 p-4 rounded-md w-96">
+            <h2 className="text-xl font-bold mb-4">REWARDS</h2>
+            <div className="space-y-4">
+              <div className="flex items-center"><img src="/B coins.png" alt="Build Coins" className="w-12 h-12" /><div className="ml-4"><p>Build Coins</p><p className="text-xs">x50</p></div></div>
+              <div className="flex items-center"><img src="/A coins.png" alt="Achievement Coins" className="w-12 h-12" /><div className="ml-4"><p>Achievement Coins</p><p className="text-xs">x20</p></div></div>
+            </div>
+            <Button className="w-full mt-6 bg-gray-700 hover:bg-gray-600" disabled>CLAIM</Button>
+          </div>
+          )}
         </div>
       </div>
     </div>
