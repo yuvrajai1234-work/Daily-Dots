@@ -167,7 +167,7 @@ const CalendarPage = () => {
               </div>
               <div>
                 <div className="flex flex-wrap gap-2 items-center mb-2">
-                    <div className="flex items-center gap-2"><div> <span class="w-4 h-4 inline-block text-red-500">🚨</span> </div><span>Special Events</span></div>
+                    <div className="flex items-center gap-2"><div> <span className="w-4 h-4 inline-block text-red-500">🚨</span> </div><span>Special Events</span></div>
                 </div>
                 {specialEvents.length > 0 ? (
                   <ul className="space-y-1 list-disc pl-5">
