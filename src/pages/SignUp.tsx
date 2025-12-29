@@ -32,7 +32,7 @@ const SignUp = () => {
       password,
       options: {
         data: {
-          display_name: username,
+          display_name : username,
         },
       },
     });
