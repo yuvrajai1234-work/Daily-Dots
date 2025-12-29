@@ -73,6 +73,25 @@ const Inbox = () => {
   };
 
   useEffect(() => {
+    const checkHabitCompletion = async () => {
+      if (session?.user) {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data, error } = await supabase
+          .from('habit_entries')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('entry_date', today)
+          .limit(1);
+
+        if (error) {
+          console.error('Error checking habit completion:', error);
+          return;
+        }
+
+        setIsHabitCompletedToday(data && data.length > 0);
+      }
+    };
+
     if (session?.user) {
       const userMetadata = session.user.user_metadata;
       const userStreak = userMetadata?.streak || 0;
@@ -88,11 +107,38 @@ const Inbox = () => {
       setStreak15DayRewardClaimed(!canClaimOnetimeReward("last_15_day_streak_claim"));
       setStreak30DayRewardClaimed(!canClaimOnetimeReward("last_30_day_streak_claim"));
 
-      setIsHabitCompletedToday(true); //This will be properly checked later
+      checkHabitCompletion();
       setLoading(false);
     } else if (session === null) {
       setLoading(false);
     }
+  }, [session]);
+
+  useEffect(() => {
+    const checkHabitCompletionOnFocus = async () => {
+      if (session?.user) {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data, error } = await supabase
+          .from('habit_entries')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('entry_date', today)
+          .limit(1);
+
+        if (error) {
+          console.error('Error checking habit completion on focus:', error);
+          return;
+        }
+
+        setIsHabitCompletedToday(data && data.length > 0);
+      }
+    };
+
+    window.addEventListener('focus', checkHabitCompletionOnFocus);
+
+    return () => {
+      window.removeEventListener('focus', checkHabitCompletionOnFocus);
+    };
   }, [session]);
 
   useEffect(() => {
@@ -109,6 +155,9 @@ const Inbox = () => {
     if (currentStreak >= 30 && canClaimOnetimeReward("last_30_day_streak_claim")) claimableStreaks++;
 
     setNotificationCount(claimableQuests + claimableStreaks);
+    if(isHabitCompletedToday){
+      setHabitCheckinRewardClaimed(!canClaimDailyReward("last_habit_checkin_reward_claim"))
+    }
   }, [session, isHabitCompletedToday, currentStreak]);
 
   useEffect(() => {
@@ -230,7 +279,11 @@ const Inbox = () => {
           <p className="text-sm text-gray-400">Complete a daily habit.</p>
           <div className="flex items-center mt-2"><img src="/B coins.png" alt="Build Coin" className="w-8 h-8 mr-2" /><div><p className="text-sm">Build Coin</p><p className="text-xs">x10</p></div></div>
         </div>
-        <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => handleClaimReward(setIsClaimingHabitCheckin, 10, "b_coins", "last_habit_checkin_reward_claim", setHabitCheckinRewardClaimed)} disabled={!isHabitCompletedToday || habitCheckinRewardClaimed || isClaimingHabitCheckin}>{isClaimingHabitCheckin ? "Claiming..." : habitCheckinRewardClaimed ? "Claimed" : "Claim"}</Button>
+        {isHabitCompletedToday ? (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => handleClaimReward(setIsClaimingHabitCheckin, 10, "b_coins", "last_habit_checkin_reward_claim", setHabitCheckinRewardClaimed)} disabled={habitCheckinRewardClaimed || isClaimingHabitCheckin}>{isClaimingHabitCheckin ? "Claiming..." : habitCheckinRewardClaimed ? "Claimed" : "Claim"}</Button>
+        ) : (
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => navigate('/dashboard')}>GO</Button>
+        )}
       </div>
     </>
   );
