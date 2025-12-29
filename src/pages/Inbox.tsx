@@ -77,10 +77,10 @@ const Inbox = () => {
       if (session?.user) {
         const today = new Date().toISOString().slice(0, 10);
         const { data, error } = await supabase
-          .from('habit_entries')
+          .from('habit_completions')
           .select('id')
           .eq('user_id', session.user.id)
-          .eq('entry_date', today)
+          .eq('completion_date', today)
           .limit(1);
 
         if (error) {
@@ -119,10 +119,10 @@ const Inbox = () => {
       if (session?.user) {
         const today = new Date().toISOString().slice(0, 10);
         const { data, error } = await supabase
-          .from('habit_entries')
+          .from('habit_completions')
           .select('id')
           .eq('user_id', session.user.id)
-          .eq('entry_date', today)
+          .eq('completion_date', today)
           .limit(1);
 
         if (error) {
