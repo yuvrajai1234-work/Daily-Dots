@@ -15,9 +15,15 @@ const achievementBranches = [
     name: "Habit Master",
     description: "Complete tasks related to forming and maintaining habits.",
     achievements: [
-      { id: 1, name: "First Step", description: "Complete a habit for the first time.", milestone: 1, reward: "50 A-Coins" },
-      { id: 2, name: "Habit Streak", description: "Maintain a habit for 7 days in a row.", milestone: 7, reward: "100 A-Coins" },
-      { id: 3, name: "30-Day Challenge", description: "Complete a habit for 30 days.", milestone: 30, reward: "250 A-Coins" },
+      { id: 1, name: "Novice", description: "Reach 100 habit points.", milestone: 100, reward: "10 A-Coins" },
+      { id: 2, name: "Apprentice", description: "Reach 500 habit points.", milestone: 500, reward: "50 A-Coins" },
+      { id: 3, name: "Adept", description: "Reach 1000 habit points.", milestone: 1000, reward: "100 A-Coins" },
+      { id: 4, name: "Expert", description: "Reach 2000 habit points.", milestone: 2000, reward: "200 A-Coins" },
+      { id: 5, name: "Master", description: "Reach 5000 habit points.", milestone: 5000, reward: "500 A-Coins" },
+      { id: 6, name: "Grandmaster", description: "Reach 10000 habit points.", milestone: 10000, reward: "1000 A-Coins" },
+      { id: 7, name: "Legend", description: "Reach 20000 habit points.", milestone: 20000, reward: "2000 A-Coins" },
+      { id: 8, name: "Demi-God", description: "Reach 50000 habit points.", milestone: 50000, reward: "5000 A-Coins" },
+      { id: 9, name: "God", description: "Reach 100000 habit points.", milestone: 100000, reward: "10000 A-Coins" },
     ],
     finalReward: { name: "Habit Master Trophy", icon: <Trophy className="h-8 w-8 text-yellow-500" /> }
   },
@@ -25,9 +31,9 @@ const achievementBranches = [
     name: "Community Leader",
     description: "Engage with the community and help others.",
     achievements: [
-      { id: 4, name: "First Post", description: "Make your first post in the community forum.", milestone: 1, reward: "25 A-Coins" },
-      { id: 5, name: "Helping Hand", description: "Receive 10 upvotes on your posts.", milestone: 10, reward: "75 A-Coins" },
-      { id: 6, name: "Community Pillar", description: "Become a moderator in the community.", milestone: 1, reward: "500 A-Coins" },
+      { id: 10, name: "First Post", description: "Make your first post in the community forum.", milestone: 1, reward: "25 A-Coins" },
+      { id: 11, name: "Helping Hand", description: "Receive 10 upvotes on your posts.", milestone: 10, reward: "75 A-Coins" },
+      { id: 12, name: "Community Pillar", description: "Become a moderator in the community.", milestone: 1, reward: "500 A-Coins" },
     ],
     finalReward: { name: "Community Leader Badge", icon: <Shield className="h-8 w-8 text-blue-500" /> }
   },
@@ -41,6 +47,7 @@ const AchievementsPage = () => {
   const [userAchievements, setUserAchievements] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [rewards, setRewards] = useState([]);
+  const [habitPoints, setHabitPoints] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -68,6 +75,16 @@ const AchievementsPage = () => {
         `)
         .eq('user_id', user.id);
       if (achievementsData) setUserAchievements(achievementsData);
+
+      const { data: habitPointsData, error: habitPointsError } = await supabase
+        .from('habit_completions')
+        .select('effort_level')
+        .eq('user_id', user.id);
+      
+      if (habitPointsData) {
+        const totalPoints = habitPointsData.reduce((acc, completion) => acc + completion.effort_level, 0);
+        setHabitPoints(totalPoints);
+      }
 
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('profiles')
@@ -130,13 +147,24 @@ const AchievementsPage = () => {
     }
   };
 
-  const getAchievementStatus = (achievementId) => {
-    const achievement = userAchievements.find(a => a.achievements.id === achievementId);
-    if (!achievement) return { progress: 0, isUnlocked: false, isClaimed: false };
+  const getAchievementStatus = (achievement, branchName) => {
+    const userAchievement = userAchievements.find(a => a.achievements.id === achievement.id);
+    
+    if (branchName === 'Habit Master') {
+      const progress = Math.min((habitPoints / achievement.milestone) * 100, 100);
+      const isUnlocked = habitPoints >= achievement.milestone;
+      return {
+        progress,
+        isUnlocked,
+        isClaimed: !!userAchievement?.claimed_at,
+      };
+    }
+    
+    if (!userAchievement) return { progress: 0, isUnlocked: false, isClaimed: false };
     return {
-        progress: achievement.progress || 0,
-        isUnlocked: !!achievement.unlocked_at,
-        isClaimed: !!achievement.claimed_at,
+        progress: userAchievement.progress || 0,
+        isUnlocked: !!userAchievement.unlocked_at,
+        isClaimed: !!userAchievement.claimed_at,
     };
   };
 
@@ -161,7 +189,7 @@ const AchievementsPage = () => {
           </Card>
           <div className="space-y-8">
             {achievementBranches.map(branch => {
-              const completedAchievementsInBranch = branch.achievements.every(ach => getAchievementStatus(ach.id).isClaimed);
+              const completedAchievementsInBranch = branch.achievements.every(ach => getAchievementStatus(ach, branch.name).isClaimed);
               return (
                 <Card key={branch.name} className="bg-gray-800 border-gray-700">
                   <CardHeader>
@@ -172,18 +200,18 @@ const AchievementsPage = () => {
                     <div className="relative overflow-x-auto pb-4">
                         <div className="flex items-center space-x-8">
                         {branch.achievements.map((ach, index) => {
-                          const { progress, isUnlocked, isClaimed } = getAchievementStatus(ach.id);
+                          const { progress, isUnlocked, isClaimed } = getAchievementStatus(ach, branch.name);
                           const canClaim = isUnlocked && !isClaimed;
-                          const prevAchieved = index === 0 || getAchievementStatus(branch.achievements[index-1].id).isClaimed;
+                          const prevAchieved = index === 0 || getAchievementStatus(branch.achievements[index-1], branch.name).isClaimed;
                           
                           return (
                             <div key={ach.id} className="flex items-center z-10">
                               <div className="flex flex-col items-center">
                                 <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 ${isClaimed ? 'bg-green-500 border-green-300' : canClaim && prevAchieved ? 'bg-yellow-400 animate-pulse border-yellow-200' : 'bg-gray-600 border-gray-500'}`}>
                                   {isClaimed ? <CheckCircle className="h-10 w-10 text-white"/> : 
-                                   (canClaim && prevAchieved ? <Trophy className="h-10 w-10 text-white"/> : <Lock className="h-10 w-10 text-gray-400"/>)}
+                                   (canClaim && prevAchieved ? <Trophy className="h-10 w-10 text-white"/> : <Lock className="h-10 w-10 text-gray-400" />)}
                                 </div>
-                                <p className="font-bold text-sm mt-2 text-center">{ach.name}</p>
+                                <p className="font-bold text-sm mt-2 text-center">{branch.name === 'Habit Master' ? ach.description : ach.name}</p>
                                 <p className="text-xs text-gray-400 text-center">{ach.reward}</p>
                                 {canClaim && prevAchieved && (
                                   <Button size="sm" className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => handleClaimAchievement(ach.id)}>
@@ -192,7 +220,7 @@ const AchievementsPage = () => {
                                 )}
                               </div>
                               {index < branch.achievements.length - 1 && (
-                                <div className={`h-1 flex-1 ${getAchievementStatus(branch.achievements[index].id).isClaimed ? 'bg-green-400' : 'bg-gray-600'}`} style={{minWidth: '50px'}}/>
+                                <div className={`h-1 flex-1 ${getAchievementStatus(branch.achievements[index], branch.name).isClaimed ? 'bg-green-400' : 'bg-gray-600'}`} style={{minWidth: '50px'}}/>
                               )}
                             </div>
                           );

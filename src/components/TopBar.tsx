@@ -36,7 +36,7 @@ export function TopBar() {
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             {isSidebarCollapsed && (
-              <>
+              <Link to="/profile" className="flex items-center">
                 <Avatar>
                   <AvatarImage src={avatarUrl} alt={displayName} />
                   <AvatarFallback>{displayInitial}</AvatarFallback>
@@ -44,7 +44,7 @@ export function TopBar() {
                 <div className="ml-4">
                   <p className="text-lg font-bold">{displayName}</p>
                 </div>
-              </>
+              </Link>
             )}
           </div>
           <div className="flex items-center space-x-4">

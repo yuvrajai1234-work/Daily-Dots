@@ -90,6 +90,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 ))}
             </nav>
             <div className="p-4 border-t mt-auto">
+              <NavLink to="/profile">
                 <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={avatarUrl} alt={userName || ''} />
@@ -99,6 +100,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                         <p className="text-sm font-medium truncate">{userName}</p>
                     </div>
                 </div>
+              </NavLink>
                 <Tooltip delayDuration={0} disableHoverableContent={!isCollapsed}>
                     <TooltipTrigger asChild>
                         <Button variant="outline" className={`w-full mt-4 ${isCollapsed ? 'h-10 w-10 p-0' : ''}`} onClick={handleLogout}>
