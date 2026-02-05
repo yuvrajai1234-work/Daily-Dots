@@ -55,6 +55,10 @@ const ProfilePage = () => {
   const [passiveActive, setPassiveActive] = useState(
     user?.user_metadata?.passiveActive || 50
   );
+  const [weight, setWeight] = useState(user?.user_metadata?.weight || null);
+  const [height, setHeight] = useState(user?.user_metadata?.height || null);
+  const [gender, setGender] = useState(user?.user_metadata?.gender || null);
+  const [bodyType, setBodyType] = useState(user?.user_metadata?.bodyType || null);
 
   useEffect(() => {
     if (user) {
@@ -71,6 +75,10 @@ const ProfilePage = () => {
       setAnalyticalCreative(metadata.analyticalCreative || 50);
       setLoyalFickle(metadata.loyalFickle || 50);
       setPassiveActive(metadata.passiveActive || 50);
+      setWeight(metadata.weight || null);
+      setHeight(metadata.height || null);
+      setGender(metadata.gender || null);
+      setBodyType(metadata.bodyType || null);
       setOriginalProfile(metadata);
       setOriginalPersonality(metadata);
     }
@@ -94,6 +102,10 @@ const ProfilePage = () => {
         location,
         archetype,
         habits,
+        weight,
+        height,
+        gender,
+        bodyType,
       };
 
       const { data: updatedUserData, error } = await supabase.auth.updateUser({
@@ -131,6 +143,10 @@ const ProfilePage = () => {
       setLocation(originalProfile.location || null);
       setArchetype(originalProfile.archetype || null);
       setHabits(originalProfile.habits || []);
+      setWeight(originalProfile.weight || null);
+      setHeight(originalProfile.height || null);
+      setGender(originalProfile.gender || null);
+      setBodyType(originalProfile.bodyType || null);
     }
     setIsProfileEditing(false);
   };
@@ -196,6 +212,16 @@ const ProfilePage = () => {
     setOriginalPersonality(user.user_metadata);
     setIsPersonalityEditing(true);
   };
+
+  const calculateBmi = () => {
+    if (weight && height) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      return bmi.toFixed(2);
+    }
+    return null;
+  };
+  const bmi = calculateBmi();
 
   const archetypes = [
     "Sage",
@@ -279,11 +305,78 @@ const ProfilePage = () => {
                     <Input
                       className="bg-gray-700 border-gray-600 w-2/3"
                       value={age || ''}
-                      onChange={(e) => setAge(e.target.value || null)}
+                      onChange={(e) => setAge(e.target.value ? Number(e.target.value) : null)}
                       placeholder="Your Age"
+                      type="number"
                     />
                   ) : (
                     <span>{age}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Gender:</span>
+                  {isProfileEditing ? (
+                    <select
+                      className="bg-gray-700 border-gray-600 w-2/3 p-2 rounded-md"
+                      value={gender || ''}
+                      onChange={(e) => setGender(e.target.value || null)}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  ) : (
+                    <span>{gender}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Weight (kg):</span>
+                  {isProfileEditing ? (
+                    <Input
+                      className="bg-gray-700 border-gray-600 w-2/3"
+                      value={weight || ''}
+                      onChange={(e) => setWeight(e.target.value ? Number(e.target.value) : null)}
+                      placeholder="e.g. 70"
+                      type="number"
+                    />
+                  ) : (
+                    <span>{weight}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Height (cm):</span>
+                  {isProfileEditing ? (
+                    <Input
+                      className="bg-gray-700 border-gray-600 w-2/3"
+                      value={height || ''}
+                      onChange={(e) => setHeight(e.target.value ? Number(e.target.value) : null)}
+                      placeholder="e.g. 175"
+                      type="number"
+                    />
+                  ) : (
+                    <span>{height}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">BMI:</span>
+                  <span>{bmi || "N/A"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Body Type:</span>
+                  {isProfileEditing ? (
+                    <select
+                      className="bg-gray-700 border-gray-600 w-2/3 p-2 rounded-md"
+                      value={bodyType || ''}
+                      onChange={(e) => setBodyType(e.target.value || null)}
+                    >
+                      <option value="">Select Body Type</option>
+                      <option value="Ectomorph">Ectomorph</option>
+                      <option value="Mesomorph">Mesomorph</option>
+                      <option value="Endomorph">Endomorph</option>
+                    </select>
+                  ) : (
+                    <span>{bodyType}</span>
                   )}
                 </div>
                 <div className="flex justify-between items-center">
@@ -357,7 +450,6 @@ const ProfilePage = () => {
               </div>
             </CardContent>
           </Card>
-          <LifeBalanceSpiderWeb />
         </div>
 
         {/* Right Column */}
@@ -391,6 +483,7 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
           <HabitStats />
+          <LifeBalanceSpiderWeb />
         </div>
       </div>
     </div>

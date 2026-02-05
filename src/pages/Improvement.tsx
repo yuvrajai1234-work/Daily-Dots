@@ -7,6 +7,7 @@ import { format, subDays } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown } from "lucide-react";
+import LifeBalanceSpiderWeb from "@/components/LifeBalanceSpiderWeb";
 
 export type Habit = {
   id: string;
@@ -221,48 +222,52 @@ const ImprovementPage = () => {
                 </CardContent>
             </Card>
         ) : null}
-
-        {habits.length > 0 ? (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader>
-                    <div className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-white">Habit Weekly Stats</CardTitle>
-                        <div className="text-right">
-                            <span className="text-2xl font-bold">{totalHabits}</span>
-                            <p className="text-sm text-zinc-400">Total Habits</p>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                    {weeklyStatsByHabit.map(habit => (
-                        <div key={habit.id} className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <div style={{ backgroundColor: habit.color || '#fbbf24' }} className="w-4 h-4 rounded-full mr-3"></div>
-                                    <span className="font-semibold text-white">{habit.name}</span>
-                                </div>
-                                <div className="text-right">
-                                    <div className="font-bold text-white">{habit.habitPercentage.toFixed(0)}% this week</div>
-                                    <div className="text-sm text-zinc-400">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
-                                </div>
-                            </div>
-                            <Progress value={habit.habitPercentage} className="w-full" />
-                        </div>
-                    ))}
-                    </div>
-                </CardContent>
-            </Card>
-        ) : (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader>
-                    <CardTitle className="text-white">No Habits Found</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-zinc-400">You haven't added any habits yet. Go to the dashboard to add your first habit.</p>
-                </CardContent>
-            </Card>
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            {habits.length > 0 ? (
+              <Card className="bg-zinc-900 border-zinc-800 text-white">
+                  <CardHeader>
+                      <div className="flex flex-row items-center justify-between">
+                          <CardTitle className="text-white">Habit Weekly Stats</CardTitle>
+                          <div className="text-right">
+                              <span className="text-2xl font-bold">{totalHabits}</span>
+                              <p className="text-sm text-zinc-400">Total Habits</p>
+                          </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-6">
+                      {weeklyStatsByHabit.map(habit => (
+                          <div key={habit.id} className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                      <div style={{ backgroundColor: habit.color || '#fbbf24' }} className="w-4 h-4 rounded-full mr-3"></div>
+                                      <span className="font-semibold text-white">{habit.name}</span>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className="font-bold text-white">{habit.habitPercentage.toFixed(0)}% this week</div>
+                                      <div className="text-sm text-zinc-400">Avg level: {habit.avgLevel.toFixed(1)} / 4</div>
+                                  </div>
+                              </div>
+                              <Progress value={habit.habitPercentage} className="w-full" />
+                          </div>
+                      ))}
+                      </div>
+                  </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-zinc-900 border-zinc-800 text-white">
+                  <CardHeader>
+                      <CardTitle className="text-white">No Habits Found</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-zinc-400">You haven't added any habits yet. Go to the dashboard to add your first habit.</p>
+                  </CardContent>
+              </Card>
+            )}
+          </div>
+          <LifeBalanceSpiderWeb />
+        </div>
     </div>
   );
 };
