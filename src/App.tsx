@@ -18,7 +18,6 @@ import Community from "@/pages/Community";
 import Inbox from "@/pages/Inbox";
 import EarnCoins from "@/pages/EarnCoins";
 import Rewards from "@/pages/Rewards";
-import AIAssistant from "@/pages/AIAssistant";
 import Ebooks from "@/pages/Ebooks";
 import Settings from "@/pages/Settings";
 import About from "@/pages/About";
@@ -55,7 +54,6 @@ function App() {
                   <Route path="/inbox" element={<Inbox />} />
                   <Route path="/earn-coins" element={<EarnCoins />} />
                   <Route path="/rewards" element={<Rewards />} />
-                  <Route path="/ai-assistant" element={<AIAssistant />} />
                   <Route path="/ebooks" element={<Ebooks />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/about" element={<About />} />
