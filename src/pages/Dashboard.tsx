@@ -97,7 +97,6 @@ const Dashboard = () => {
   const fetchData = useCallback(async () => {
     if (!session) return;
 
-    // Fetch all completions for the user
     const { data: completions, error: completionsError } = await supabase
       .from('habit_completions')
       .select('completion_date, effort_level, habit_id')
@@ -108,7 +107,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Fetch all active habits for the user
     const { data: habits, error: habitsError } = await supabase
       .from('habits')
       .select('id, name, icon, color, created_at, user_id, is_archived')
@@ -120,40 +118,32 @@ const Dashboard = () => {
       return;
     }
 
-    // --- Start of integrated processing logic ---
-
-    // Calculate Today's Score
     const today = new Date().toISOString().slice(0, 10);
     const todayCompletions = completions.filter(c => c.completion_date === today);
     const todayScore = todayCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
-    // Calculate Current Streak
     const completionDates = new Set(completions.map(c => c.completion_date));
     let currentStreak = 0;
     let checkDate = new Date();
     
-    // If there's no completion for today, start checking from yesterday
     if (!completionDates.has(checkDate.toISOString().slice(0, 10))) {
         checkDate.setDate(checkDate.getDate() - 1);
     }
 
-    // Count consecutive days with completions
     while (completionDates.has(checkDate.toISOString().slice(0, 10))) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
     }
     
-    // *** THIS IS THE FIX: Update user metadata with the new streak ***
-    const { data: user, error: userError } = await supabase.auth.updateUser({
-        data: { ...session.user.user_metadata, streak: currentStreak }
-    });
-
-    if (userError) {
-        console.error('Error updating user streak:', userError);
+    if (session.user.user_metadata?.streak !== currentStreak) {
+        const { error: userError } = await supabase.auth.updateUser({
+            data: { ...session.user.user_metadata, streak: currentStreak }
+        });
+        if (userError) {
+            console.error('Error updating user streak:', userError);
+        }
     }
 
-
-    // Calculate Cycle Score (Current Week)
     const todayDate = new Date();
     const dayOfWeek = todayDate.getDay();
     const startOfWeek = new Date(todayDate);
@@ -167,7 +157,6 @@ const Dashboard = () => {
     const currentWeekCompletions = completions.filter(c => datesOfWeek.includes(c.completion_date));
     const cycleScore = currentWeekCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
 
-    // Calculate Improvement vs. Last Week
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
     const datesOfLastWeek = Array.from({ length: 7 }, (_, i) => {
@@ -194,7 +183,6 @@ const Dashboard = () => {
       improvement,
     });
 
-    // Generate data for the 7-day progress chart
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const newChartData = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
@@ -206,12 +194,10 @@ const Dashboard = () => {
     });
     setChartData(newChartData);
 
-    // Process habits to include their individual history and completion status for today
     const habitsWithCompletionStatus = habits.map(habit => {
         const habitCompletions = completions.filter(c => c.habit_id === habit.id);
         const todayCompletion = habitCompletions.find(c => c.completion_date === today);
 
-        // Individual habit improvement calculation
         const currentWeekHabitCompletions = habitCompletions.filter(c => datesOfWeek.includes(c.completion_date));
         const cycleScoreHabit = currentWeekHabitCompletions.reduce((acc, curr) => acc + curr.effort_level, 0);
         const lastWeekHabitCompletions = habitCompletions.filter(c => datesOfLastWeek.includes(c.completion_date));
@@ -238,8 +224,6 @@ const Dashboard = () => {
         };
     });
     setHabits(habitsWithCompletionStatus);
-
-    // --- End of integrated processing logic ---
 
   }, [session]);
 

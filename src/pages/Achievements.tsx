@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -49,66 +49,72 @@ const AchievementsPage = () => {
   const [rewards, setRewards] = useState([]);
   const [habitPoints, setHabitPoints] = useState(0);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
+    setLoading(true);
 
-    const fetchData = async () => {
-      setLoading(true);
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('a_coins')
+      .eq('id', user.id)
+      .single();
+    if (profileData) setACoins(profileData.a_coins);
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('a_coins')
-        .eq('id', user.id)
-        .single();
-      if (profileData) setACoins(profileData.a_coins);
+    const { data: achievementsData, error: achievementsError } = await supabase
+      .from('user_achievements')
+      .select(`
+        progress,
+        unlocked_at,
+        claimed_at,
+        achievements (*)
+      `)
+      .eq('user_id', user.id);
+    if (achievementsData) setUserAchievements(achievementsData);
 
-      const { data: achievementsData, error: achievementsError } = await supabase
-        .from('user_achievements')
-        .select(`
-          progress,
-          unlocked_at,
-          claimed_at,
-          achievements (*)
-        `)
-        .eq('user_id', user.id);
-      if (achievementsData) setUserAchievements(achievementsData);
+    const { data: habitPointsData, error: habitPointsError } = await supabase
+      .from('habit_completions')
+      .select('effort_level')
+      .eq('user_id', user.id);
+    
+    if (habitPointsData) {
+      const totalPoints = habitPointsData.reduce((acc, completion) => acc + completion.effort_level, 0);
+      setHabitPoints(totalPoints);
+    }
 
-      const { data: habitPointsData, error: habitPointsError } = await supabase
-        .from('habit_completions')
-        .select('effort_level')
-        .eq('user_id', user.id);
-      
-      if (habitPointsData) {
-        const totalPoints = habitPointsData.reduce((acc, completion) => acc + completion.effort_level, 0);
-        setHabitPoints(totalPoints);
-      }
+    const { data: leaderboardData, error: leaderboardError } = await supabase
+      .from('profiles')
+      .select('username, a_coins')
+      .order('a_coins', { ascending: false })
+      .limit(10);
+    if (leaderboardData) setLeaderboard(leaderboardData);
 
-      const { data: leaderboardData, error: leaderboardError } = await supabase
-        .from('profiles')
-        .select('username, a_coins')
-        .order('a_coins', { ascending: false })
-        .limit(10);
-      if (leaderboardData) setLeaderboard(leaderboardData);
+    const { data: rewardsData, error: rewardsError } = await supabase
+      .from('rewards')
+      .select('*');
+    if (rewardsData) setRewards(rewardsData);
 
-      const { data: rewardsData, error: rewardsError } = await supabase
-        .from('rewards')
-        .select('*');
-      if (rewardsData) setRewards(rewardsData);
-
-      setLoading(false);
-    };
-
-    fetchData();
-
-    const profileChannel = supabase.channel('achievements-page-updates').on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData()).subscribe();
-
-    return () => {
-      supabase.removeChannel(profileChannel);
-    };
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+
+      const profileChannel = supabase
+        .channel('achievements-page-updates')
+        .on('postgres_changes', { event: '*', schema: 'public' }, fetchData)
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(profileChannel);
+      };
+    } else {
+      setLoading(false);
+    }
+  }, [user, fetchData]);
 
   const handleRedeem = async (reward) => {
     if (aCoins < reward.cost) {
@@ -120,6 +126,7 @@ const AchievementsPage = () => {
       toast.error(`Failed to redeem reward: ${error.message}`);
     } else {
       toast.success(`Successfully redeemed ${reward.name}!`);
+      fetchData();
     }
   };
 
@@ -139,7 +146,8 @@ const AchievementsPage = () => {
       }
 
       if (data) {
-        toast.success(`Reward Claimed: ${data}`);
+        toast.success(data);
+        fetchData();
       }
     } catch (error) {
       toast.error(`Error claiming achievement: ${error.message}`);
@@ -148,7 +156,8 @@ const AchievementsPage = () => {
   };
 
   const getAchievementStatus = (achievement, branchName) => {
-    const userAchievement = userAchievements.find(a => a.achievements.id === achievement.id);
+    if (!achievement) return { progress: 0, isUnlocked: false, isClaimed: false };
+    const userAchievement = userAchievements.find(a => a.achievements && a.achievements.id === achievement.id);
     
     if (branchName === 'Habit Master') {
       const progress = Math.min((habitPoints / achievement.milestone) * 100, 100);
