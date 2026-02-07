@@ -10,8 +10,6 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     hmr: {
       protocol: 'wss',
-      clientPort: 9000,
-      host: '9000-firebase-daily-dotsgit-1764587106383.cluster-cz5nqyh5nreq6ua6gaqd7okl7o.cloudworkstations.dev'
     }
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
