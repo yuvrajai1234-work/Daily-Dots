@@ -10,7 +10,7 @@ const subscriptionPlans = [
     {
       title: "Weekly",
       price: "399",
-      coins: "100 P Coins",
+      coins: "1000 P Coins",
       features: [
         "100 P Coins",
         "Ad-Free Experience",
